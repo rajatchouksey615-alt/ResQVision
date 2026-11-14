@@ -1,0 +1,2 @@
+# Phase 0 placeholder. Approved runtime dependencies will be selected and pinned
+# when backend implementation begins.

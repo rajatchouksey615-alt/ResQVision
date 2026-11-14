@@ -1,188 +1,114 @@
-# ResQVision 🚨
-### AI-Powered Road Accident Detection & Emergency Response System
+# ResQVision
 
-ResQVision is an AI-powered road accident detection and emergency response platform designed to identify potential road accidents through computer vision and facilitate faster incident coordination between police authorities and hospitals.
+**AI-Based Road Accident Detection and Emergency Response System**
 
-The system uses AI-based video analysis to detect vehicles and identify potential accident events. Verified incidents are processed through a centralized backend and made available to authorized users through a role-based mobile application.
+## Project Description
 
----
+ResQVision is an academic major project exploring how computer vision and coordinated software workflows could help identify potential road accidents from CCTV or video input. The planned system will analyze video, identify accident candidates, apply verification logic, capture relevant evidence, create incident records through a backend, and present those records to authorized Admin, Police, and Hospital users.
 
-## 🎯 Project Objectives
+This repository is currently in **Phase 0: Project Foundation and Repository Setup**. The structure and documentation are being established; the mobile application, backend, and AI service are planned and have not been implemented.
 
-- Detect potential road accidents using AI and computer vision.
-- Process CCTV, IP camera and video inputs.
-- Identify and verify potential accident events.
-- Capture accident-related evidence and metadata.
-- Maintain centralized incident records.
-- Notify authorized police and hospital users.
-- Provide incident location and response status tracking.
-- Facilitate coordination through a role-based mobile application.
+## Problem Statement
 
----
+Accident information may reach response organizations late or without consistent supporting details. ResQVision will explore a prototype workflow for identifying potential incidents from video and organizing information for authorized users. Detection results are candidates and must pass verification logic; an AI output alone must not be represented as a confirmed accident.
 
-## 🏗️ System Architecture
+## Project Objectives
 
-ResQVision consists of three major components:
+- Establish a modular foundation for a four-member development team.
+- Plan a video analysis pipeline for accident candidate detection and temporal verification.
+- Define a backend boundary for authentication, authorization, incident records, evidence metadata, and notifications.
+- Plan role-based mobile interfaces for Admin, Police, and Hospital users.
+- Document security, privacy, testing, and deployment expectations before implementation.
 
-### 1. Mobile Application
-- Admin Dashboard
-- Police Dashboard
-- Hospital Dashboard
-- Authentication and role-based access
-- Incident monitoring and management
-- Location and notification interfaces
+## Core Features
 
-### 2. Backend System
-- REST API development
-- User authentication and authorization
-- Incident management
-- Database operations
-- Notification management
-- Role-Based Access Control (RBAC)
+The following capabilities are planned. None is implemented in Phase 0.
 
-### 3. AI Detection Service
-- Video stream processing
-- Vehicle detection
-- Object tracking
-- Accident candidate verification
-- Evidence capture
-- Communication with the backend
+- Video and CCTV input processing for vehicle detection and tracking.
+- Accident candidate identification followed by verification logic.
+- Evidence capture and storage of evidence metadata.
+- Centralized incident records and role-based access.
+- Incident review and response status workflows for authorized users.
+- Simulated or otherwise non-operational notification flows for the academic prototype.
 
----
+## System Architecture
 
-## 🛠️ Technology Stack
+The planned system has four main parts:
 
-| Component | Technology |
+- **Mobile app:** Flutter and Dart interfaces for Admin, Police, and Hospital users. It will communicate with the backend API and will not access the database directly.
+- **Backend:** Python, Django, Django REST Framework, and PostgreSQL for API access, authentication and authorization, incident business logic, evidence metadata, and notification coordination.
+- **AI service:** Python, YOLO, OpenCV, PyTorch, and NumPy for video processing, object detection and tracking, candidate identification, temporal verification, and evidence generation.
+- **Infrastructure and documentation:** Docker conventions and supporting deployment plans will be introduced when the project reaches the relevant phase. Technical decisions and workflows are documented under docs.
+
+The intended flow is video input to AI candidate analysis and verification, then evidence metadata and an incident record through the backend, and finally authorized review in the mobile app. The integration contracts and implementation details remain to be designed.
+
+## Technology Stack
+
+| Area | Planned technology or status |
 |---|---|
-| Mobile Framework | Flutter |
-| Programming Language | Dart |
-| Backend Language | Python |
-| Backend Framework | Django |
-| API Framework | Django REST Framework |
-| Database | PostgreSQL |
-| Object Detection | YOLO |
-| Computer Vision | OpenCV |
-| Deep Learning | PyTorch |
-| Authentication | JWT |
-| Authorization | Role-Based Access Control |
-| Push Notifications | Firebase Cloud Messaging |
-| Maps | Maps SDK (provider to be finalized) |
-| Version Control | Git |
-| Repository Hosting | GitHub |
+| Mobile | Flutter, Dart |
+| Backend | Python, Django, Django REST Framework |
+| Structured data | PostgreSQL |
+| Computer vision | YOLO, OpenCV, PyTorch, NumPy |
+| Push notifications | Firebase Cloud Messaging planned; credentials and live delivery are not configured |
+| Maps | Provider pending selection |
+| Media storage | Object storage planned; provider pending selection |
+| Development environment | Docker planned; no services are configured in Phase 0 |
 
-*This is the proposed technology stack. Individual components will be marked implemented after development and testing.*
+## User Roles
 
----
+- **ADMIN:** planned system and user administration and incident oversight.
+- **POLICE:** planned authorized incident review and response status updates.
+- **HOSPITAL:** planned authorized incident review and response readiness updates.
 
-## 👥 User Roles
+Role permissions and workflows must be specified and reviewed before implementation. These roles do not imply a connection to real emergency services.
 
-### Admin
-- Monitor system activity.
-- Manage users and access permissions.
-- View and manage accident incidents.
-- Monitor police and hospital information.
-- Access incident analytics.
+## Repository Structure
 
-### Police
-- Receive authorized incident alerts.
-- View accident location and evidence.
-- Acknowledge incidents.
-- Update response status.
-- Maintain incident response history.
+- mobile_app: Flutter application foundation, architecture notes, assets, and test placeholders.
+- backend: Django service foundation, requirements placeholders, configuration and application boundaries, and test placeholders.
+- ai_service: video analysis service foundation, source boundaries, model and dataset policies, and test placeholders.
+- infrastructure: future development and deployment configuration conventions.
+- docs: requirements, architecture, workflows, database, API, testing, security, deployment, decisions, and academic project documentation.
+- scripts: future repository setup and validation scripts.
 
-### Hospital
-- Receive authorized incident alerts.
-- Review accident information.
-- View incident location and evidence.
-- Acknowledge emergency notifications.
-- Update response readiness and status.
+## Development Roadmap
 
----
+The project is phase-based and feature-driven, with test-driven development applied as executable features are added. Phase 0 establishes the repository and standards. Later phases will be planned and approved by the team before implementation. Likely work areas include requirements and design, service foundations, role and incident workflows, AI candidate analysis and verification, integration, evaluation, and deployment preparation. This is an outline, not a claim that those phases have started or that their ordering is final.
 
-## 📁 Repository Structure
+## Local Development Overview
 
-```text
-ResQVision/
-│
-├── mobile_app/
-│   └── Flutter application
-│
-├── backend/
-│   └── Django REST Framework backend
-│
-├── ai_service/
-│   └── Python AI accident detection service
-│
-├── docs/
-│   ├── architecture/
-│   ├── workflows/
-│   ├── diagrams/
-│   └── project_documentation/
-│
-├── .gitignore
-├── README.md
-└── LICENSE (if applicable)
-```
+Phase 0 does not install dependencies or provide runnable services. Review the module READMEs and docs/deployment/local_development.md for the intended setup approach and the decisions still pending. Do not place real credentials in the repository. Provider-specific service setup will be documented only after the team selects providers.
 
----
+## Security Principles
 
-## 🔄 Development Approach
+- Keep secrets and local environment files out of version control; use .env.example for safe variable names and placeholders.
+- Validate inputs and enforce authentication and role-based authorization at service boundaries.
+- Treat incident evidence and location information as sensitive data.
+- Restrict CCTV recordings, datasets, model weights, and uploaded media from routine Git commits.
+- Use least privilege and document security-sensitive decisions.
+- Keep real emergency integrations disabled unless explicitly authorized through the appropriate project process.
 
-The project will be developed incrementally using a feature-based development approach.
+## Prototype Limitations
 
-1. Mobile application foundation and UI.
-2. Authentication and role management.
-3. Django backend and database development.
-4. Mobile application and backend integration.
-5. AI accident detection service.
-6. Incident verification and evidence management.
-7. Police and hospital response workflows.
-8. Notifications and location integration.
-9. Testing and deployment preparation.
+ResQVision is an academic prototype. It must not send real emergency alerts to police stations or hospitals, dispatch ambulances, or trigger real-world response. External emergency integrations remain disabled until explicitly authorized. AI detections are unconfirmed candidates and require verification logic and appropriate human review. No production service, provider, or operational readiness is claimed.
 
-Each feature will be implemented, tested and integrated before proceeding to the next development stage.
+## Testing Strategy
 
----
+Use test-driven development for feature work: define expected behavior, add focused tests, implement the smallest useful change, and run relevant checks before review. Add unit, integration, API, widget, and evaluation tests as appropriate to each module. Phase 0 contains test directory placeholders only; it does not claim an executable test suite.
 
-## 🔐 Security Considerations
+## Team Information
 
-- JWT-based authentication.
-- Role-Based Access Control.
-- Secure API communication.
-- Environment-based configuration.
-- Protection of sensitive incident information.
-- Controlled access to accident evidence.
+ResQVision is an academic major project for a team of four. Team member names and module ownership have not been supplied here; see docs/project_documentation/team_responsibilities.md for an assignment template.
 
----
+## Project Status
 
-## ⚠️ Prototype Disclaimer
+- Current phase: **Phase 0 — Project Foundation and Repository Setup**
+- Repository modules: planned; implementation has not started.
+- Emergency service integrations: disabled and out of scope without explicit authorization.
+- Map and object storage providers: pending selection.
+- License: pending team and institutional decision; see LICENSE_DECISION.md.
 
-ResQVision is being developed as an academic project prototype.
+## Documentation
 
-Real-world emergency dispatch and direct notifications to police stations or hospitals will not be performed without authorized integrations and appropriate approvals.
-
-Prototype workflows may use simulated incident data and response actions.
-
----
-
-## 🚀 Project Status
-
-**Current Stage:** Planning and Initial Development
-
-Features and integrations will be updated as implementation progresses.
-
----
-
-## 👨‍💻 Contributors
-
-Developed by a team of four B.Tech students as an academic project.
-
-**Project Name:** ResQVision  
-**Domain:** Artificial Intelligence & Machine Learning  
-**Institution:** NRI Institute of Research & Technology, Bhopal
-
----
-
-## 📄 License
-
-License to be decided by the project team.
+Start with the [documentation index](docs/README.md), [architecture decision records](docs/decisions/README.md), and [contribution guide](CONTRIBUTING.md). See [SECURITY.md](SECURITY.md) for security reporting and [LICENSE_DECISION.md](LICENSE_DECISION.md) for the pending license decision.

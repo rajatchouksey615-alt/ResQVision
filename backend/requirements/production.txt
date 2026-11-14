@@ -1,0 +1,2 @@
+# Phase 0 placeholder. Production dependency constraints will be documented
+# after runtime dependencies and deployment targets are approved.

@@ -1,0 +1,2 @@
+# Phase 0 placeholder. Core runtime dependencies will be selected and pinned
+# when AI service implementation begins.

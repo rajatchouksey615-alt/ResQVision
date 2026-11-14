@@ -1,0 +1,23 @@
+# Normalize text files to LF in the repository.
+* text=auto eol=lf
+
+# Keep Windows command scripts compatible with Windows shells.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Treat common media, model, archive, and document artifacts as binary.
+*.7z binary
+*.gif binary
+*.ico binary
+*.jpeg binary
+*.jpg binary
+*.mp3 binary
+*.mp4 binary
+*.onnx binary
+*.pdf binary
+*.png binary
+*.pt binary
+*.pth binary
+*.tif binary
+*.tiff binary
+*.zip binary
