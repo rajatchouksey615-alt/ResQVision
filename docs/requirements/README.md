@@ -1,11 +1,11 @@
 # Requirements Documentation
 
-**Status:** Phase 1 draft for team review. Requirements describe planned behavior and are not implemented or approved by virtue of being documented.
+**Status:** REVISED_DRAFT — pending team approval. Requirements describe planned behavior and are not implemented or approved by virtue of being documented.
 
 ## Index
 
 - [System requirements specification](system_requirements_specification.md): purpose, boundaries, stakeholders, environment, constraints, assumptions, and acceptance criteria.
-- [Functional requirements](functional_requirements.md): uniquely identified role, AI, incident, evidence, notification, reporting, and audit behaviors.
+- [Functional requirements](functional_requirements.md): uniquely identified role, VideoSource, DetectionEvent, candidate/incident, independent assignment, evidence, location, notification, and audit behaviors.
 - [Non-functional requirements](non_functional_requirements.md): security, privacy, reliability, usability, performance, and other quality needs.
 - [Scope and constraints](scope_and_constraints.md): Phase 1 design scope, planned prototype scope, exclusions, and open questions.
 - [Use cases](use_cases.md): actor flows, alternative paths, and exception scenarios.

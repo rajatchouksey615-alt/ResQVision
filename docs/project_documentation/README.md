@@ -1,6 +1,6 @@
 # Academic Project Documentation
 
-This directory holds project context and team planning material for academic review. Keep objectives, scope, ownership, and project status synchronized with reviewed decisions and actual implementation.
+This directory holds project context and team planning material for academic review. The Phase 1 specification is REVISED_DRAFT pending team approval; keep objectives, scope, ownership, and project status synchronized with reviewed decisions and actual implementation.
 
 ## Index
 

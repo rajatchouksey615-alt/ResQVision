@@ -1,6 +1,6 @@
 # Use Cases
 
-**Status:** Draft for team review. These use cases describe planned behavior and do not define API contracts.
+**Status:** REVISED_DRAFT — pending team approval. These use cases describe planned behavior and do not define API contracts.
 
 ## Actors
 
@@ -9,8 +9,8 @@
 | ADMIN | Prototype user administrator and incident oversight role; exact verification authority is proposed and needs approval |
 | POLICE | Authorized incident reviewer and simulated response-status actor |
 | HOSPITAL | Authorized incident reviewer and simulated readiness-status actor |
-| AI service | Authenticated machine actor that analyzes approved video and submits candidate evidence |
-| Video source owner/operator | Provides an approved input and confirms permitted purpose and handling |
+| AI service | Authenticated machine actor that analyzes approved video and submits DetectionEvents and associated evidence metadata for backend candidate association |
+| Video source owner/operator | Provides an approved input and confirms permitted purpose and handling; source-registry authority is TBD |
 | Backend system | Enforces access, owns incident records, applies transitions, and records audit history |
 
 ## UC-01 — Authenticate and access a role dashboard
@@ -22,32 +22,32 @@
 - **Postconditions:** Successful session is attributable; no role privilege is inferred from client navigation.
 - **Related requirements:** FR-001, FR-002, FR-013.
 
-## UC-02 — Process an approved video input
+## UC-02 — Process an authorized VideoSource input
 
 - **Primary actor:** AI service; source owner/operator supplies the input.
 - **Preconditions:** Source, purpose, and data-use permission are approved; supported processing environment is available.
-- **Main flow:** Service validates input and permission metadata; samples/preprocesses frames; detects and tracks relevant objects; applies temporal analysis; produces a candidate or a no-candidate outcome with provenance.
+- **Main flow:** Backend registry identifies an authorized VideoSource; service validates source/policy metadata; samples/preprocesses frames; detects and tracks relevant objects; applies temporal analysis; produces one or more DetectionEvents with source/time provenance.
 - **Alternatives/exceptions:** Unauthorized, malformed, corrupt, or unavailable input is rejected/failed distinctly; resource exhaustion is recorded as a processing failure, not a negative detection.
-- **Postconditions:** Candidate evidence or a traceable processing outcome exists; no candidate is represented as a confirmed accident.
-- **Related requirements:** FR-003, FR-004.
+- **Postconditions:** DetectionEvent or traceable processing outcome exists; event remains distinct from candidate and incident.
+- **Related requirements:** FR-003, FR-004, FR-028, FR-029.
 
-## UC-03 — Verify a candidate
+## UC-03 — Review an AccidentCandidate and create an incident only on verification
 
 - **Primary actor:** Authorized reviewer (role TBD; ADMIN is a proposal); AI service supplies evidence.
-- **Preconditions:** Candidate is DETECTED and backend has accepted its provenance.
-- **Main flow:** Backend places candidate UNDER_VERIFICATION; reviewer examines temporal evidence and uncertainty; reviewer records verified or rejected decision with rationale; backend applies an allowed transition and audits it.
-- **Alternatives/exceptions:** Evidence is insufficient, contradictory, unavailable, or review is delayed; candidate remains pending or is rejected according to an approved rule.
-- **Postconditions:** Decision and actor/time are auditable; only VERIFIED candidates can proceed to assignment.
-- **Related requirements:** FR-005, FR-016.
+- **Preconditions:** Backend has accepted one or more DetectionEvents and created/associated an AccidentCandidate in RECEIVED.
+- **Main flow:** Candidate enters UNDER_REVIEW; reviewer examines events, temporal evidence, EvidenceAssets, and LocationProvenance; reviewer verifies/rejects with reason; backend atomically creates one linked OPEN AccidentIncident only after VERIFIED.
+- **Alternatives/exceptions:** Candidate remains UNDER_REVIEW if insufficient, contradictory, or unavailable evidence; REJECTED candidate has no incident; transaction failure creates neither false verification nor orphan incident.
+- **Postconditions:** Candidate/incident links, reviewer, decision, time, evidence, and audit are preserved; incident has distinct lifecycle.
+- **Related requirements:** FR-005, FR-018, FR-019, FR-030.
 
-## UC-04 — Review and update an assigned incident
+## UC-04 — Review and update one agency's ResponseAssignment
 
 - **Primary actors:** POLICE and HOSPITAL.
-- **Preconditions:** Actor is authenticated and incident is assigned within the actor's authorized scope.
-- **Main flow:** Actor reviews the permitted summary and evidence; acknowledges the assignment; records permitted response/readiness updates; the backend validates and audits each transition.
-- **Alternatives/exceptions:** Out-of-scope incident, stale state, or invalid transition is denied; media or map unavailability does not fabricate information.
-- **Postconditions:** Response status and attribution are available to authorized users.
-- **Related requirements:** FR-006, FR-011, FR-012, FR-014.
+- **Preconditions:** Actor is authenticated and has a ResponseAssignment for that specific agency target.
+- **Main flow:** Actor reviews minimized incident summary and authorized evidence; acknowledges own PENDING assignment; records an independent Response/progress/completion/readiness update; backend validates and audits.
+- **Alternatives/exceptions:** Out-of-scope, stale, or invalid transition is denied; action never mutates another agency's assignment or the incident acknowledgement state.
+- **Postconditions:** AssignmentStatusHistory and Response are attributable; Hospital readiness is not a treatment claim; all prototype activity is simulated.
+- **Related requirements:** FR-006, FR-011, FR-012, FR-020, FR-021, FR-023.
 
 ## UC-05 — Administer users and oversee incidents
 
@@ -58,22 +58,22 @@
 - **Postconditions:** Changes are persisted by the backend and auditable.
 - **Related requirements:** FR-002, FR-008, FR-013, FR-016.
 
-## UC-06 — Submit a detection event to the backend
+## UC-06 — Submit a DetectionEvent to the backend
 
 - **Primary actor:** AI service.
-- **Preconditions:** Service identity is authenticated; event format and retry/idempotency rules have been agreed for implementation.
-- **Main flow:** Service submits candidate provenance and evidence references; backend validates source and service identity; backend creates or links the candidate; backend returns a safe accepted/rejected outcome.
-- **Alternatives/exceptions:** Repeated event is recognized or safely flagged for review; invalid signature/identity, malformed payload, or unavailable backend does not silently lose the event.
-- **Postconditions:** Backend remains the single source of truth; service cannot set response states or dispatch responders.
-- **Related requirements:** FR-004, FR-007, FR-016.
+- **Preconditions:** AI_SERVICE identity is authenticated; approved VideoSource and stable event identity are supplied under a future contract.
+- **Main flow:** Service submits one event and evidence metadata; backend validates machine identity, source authorization, and payload; backend stores event/outcome and associates it to or creates candidate; returns a safe intake result.
+- **Alternatives/exceptions:** Identical event ID is idempotent; distinct possible duplicate event is preserved/flagged; invalid credential/source is denied; backend timeout is retried with same event ID.
+- **Postconditions:** Provenance is retained; AI_SERVICE cannot verify, create incident, assign, respond, or administer users.
+- **Related requirements:** FR-004, FR-007, FR-017, FR-018, FR-028.
 
 ## UC-07 — Record simulated notification and response
 
 - **Primary actors:** Backend system, ADMIN, POLICE, HOSPITAL.
 - **Preconditions:** A permitted incident event or assignment occurs.
-- **Main flow:** Backend creates a simulated notification record; recipient sees it within allowed scope; actor acknowledges and records status through the client.
+- **Main flow:** Backend creates a simulated notification record; recipient sees/marks the notification READ within allowed scope; assignment acknowledgement is a separate operation on that recipient's ResponseAssignment.
 - **Alternatives/exceptions:** Simulated delivery failure or retry is recorded; no real push to an emergency organization is attempted.
-- **Postconditions:** Notification and response records are clearly labeled as prototype simulation.
+- **Postconditions:** Notification and assignment/response records remain separate and clearly labeled as prototype simulation.
 - **Related requirements:** FR-009, FR-011, FR-012.
 
 ## UC-08 — Inspect history and aggregate reports
@@ -89,7 +89,43 @@
 
 - **Primary actor:** Backend system and AI service.
 - **Preconditions:** An event is repeated, processing is incomplete, or evidence is uncertain.
-- **Main flow:** System distinguishes duplicate candidate, processing failure, no candidate, and uncertain candidate; preserves references to related events; routes unresolved candidates to review.
+- **Main flow:** System distinguishes repeated event ID, distinct related events, candidate association, processing failure, no candidate, and uncertain candidate; preserves every accepted event and its links; routes uncertain grouping/review to an authorized human.
 - **Alternatives/exceptions:** If deduplication cannot be established confidently, backend records a possible duplicate for authorized review instead of discarding it.
 - **Postconditions:** No failure or uncertainty is silently converted to VERIFIED; retry and audit behavior remains traceable.
-- **Related requirements:** FR-003, FR-004, FR-007, FR-016.
+- **Related requirements:** FR-003, FR-004, FR-017, FR-018, FR-030.
+
+## UC-10 — Upload and validate an EvidenceAsset
+
+- **Primary actor:** AI_SERVICE; backend and object storage provide the transfer boundary.
+- **Preconditions:** Candidate exists; AI_SERVICE is authenticated; evidence metadata is permitted.
+- **Main flow:** AI_SERVICE requests an upload authorization for one asset; backend creates a server-controlled reference and PENDING_UPLOAD metadata; backend issues short-lived object-scoped upload permission where supported; service uploads; backend verifies expected reference, type/size, and integrity; asset becomes QUARANTINED for required scanning and AVAILABLE only after success.
+- **Alternatives/exceptions:** Unauthorized/expired/reused authorization is denied; failed transfer/integrity/scanning leaves asset FAILED or QUARANTINED; backend-mediated upload is the provider fallback.
+- **Postconditions:** Evidence metadata and audit are stored in backend; object storage holds bytes only; asset is not retrievable until AVAILABLE.
+- **Related requirements:** FR-006, FR-025, FR-026, FR-030.
+
+## UC-11 — Retrieve an EvidenceAsset
+
+- **Primary actor:** ADMIN, POLICE, or HOSPITAL within approved scope.
+- **Preconditions:** User authenticated; asset AVAILABLE; asset is related to a candidate/incident in the user's scope.
+- **Main flow:** Client requests by logical asset reference; backend checks object, role, assignment and data-minimization policy; backend streams media or provides short-lived restricted retrieval; access is audited.
+- **Alternatives/exceptions:** Denied, expired, deleted, quarantined, or unavailable evidence returns safe outcome without disclosing a storage path or unrelated object existence.
+- **Postconditions:** No broad object-store credentials reach mobile client; sensitive retrieval attempt is attributable.
+- **Related requirements:** FR-006, FR-027, FR-030.
+
+## UC-12 — Track independent Police and Hospital assignments
+
+- **Primary actors:** ADMIN/approved assignment actor, POLICE, HOSPITAL, backend.
+- **Preconditions:** Verified candidate has created an OPEN AccidentIncident.
+- **Main flow:** Authorized actor creates separate PENDING assignment records for eligible Police and Hospital targets; each target independently acknowledges, records Response, completes, or reports inability; notification records are created separately; incident becomes RESPONSE_ACTIVE when response activity begins.
+- **Alternatives/exceptions:** One target remains pending or is unable to respond; other assignment is unchanged; reassignment cancels the old assignment and creates a new one; overdue default is a manual-review indicator.
+- **Postconditions:** Assignment histories and incident history are separate; no notification or one agency acknowledgement marks the entire incident acknowledged.
+- **Related requirements:** FR-020, FR-021, FR-022, FR-023, FR-024, FR-031.
+
+## UC-13 — Preserve location provenance
+
+- **Primary actors:** VideoSource owner/operator, AI_SERVICE, authorized human reviewer, backend.
+- **Preconditions:** A location claim comes from registered camera location, approved GPS metadata, inferred estimate, or human verification.
+- **Main flow:** Backend records origin/source/time/uncertainty and links claim to the relevant VideoSource, event, candidate, or incident; authorized client shows the claim and its uncertainty; a permitted manual correction appends history.
+- **Alternatives/exceptions:** Missing, conflicting, or imprecise location remains unknown/uncertain; camera coordinates are never silently labeled accident coordinates.
+- **Postconditions:** Provenance and corrections are auditable and access-scoped.
+- **Related requirements:** FR-010, FR-029.

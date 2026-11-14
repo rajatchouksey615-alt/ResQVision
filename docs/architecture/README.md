@@ -1,6 +1,6 @@
 # Architecture Documentation
 
-**Status:** Phase 1 proposed design for team review; no services or integrations are implemented.
+**Status:** REVISED_DRAFT — pending team approval; no services or integrations are implemented.
 
 ## Index
 
@@ -8,7 +8,7 @@
 - [System architecture](system_architecture.md): goals, containers, communication, ownership, failures, security, and trade-offs.
 - [Component architecture](component_architecture.md): responsibility boundaries and cross-component dependencies.
 - [Trust boundaries](trust_boundaries.md): sensitive data, threats, and baseline controls.
-- [Data flow](data_flow.md): candidate-to-incident flow and data ownership.
+- [Data flow](data_flow.md): source ingestion, event-to-candidate association, evidence upload/retrieval, location provenance, and independent response data flow.
 - [Technology decisions](technology_decisions.md): planned stack and status.
 - [Open architecture decisions](open_architecture_decisions.md): unresolved options and trade-offs.
 

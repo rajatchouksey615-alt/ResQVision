@@ -1,34 +1,68 @@
 # Requirements Traceability
 
-**Status:** Draft planning baseline. Test cases are planned, not implemented or executed.
+**Status:** REVISED_DRAFT — pending team approval. Planned tests are not implemented or executed.
 
-| Requirement | Capability / component | Workflow | Acceptance coverage | Planned test coverage | Phase | Status |
-|---|---|---|---|---|---|---|
-| FR-001 | Backend identity; mobile authentication UI | User-role UC-01 | Valid account access; invalid/disabled account denied | Unit, API, client integration | Backend/mobile foundation | Draft |
-| FR-002 | Backend user and role administration | UC-05 | Admin-only account changes; supported roles; audit | API authorization and domain tests | Backend foundation | Draft |
-| FR-003 | AI input validation and source policy | AI workflow; UC-02 | Unauthorized/invalid source rejected distinctly | AI unit and ingestion integration | AI foundation | Draft |
-| FR-004 | Detection, tracking, candidate event | AI workflow; UC-02/06 | Provenance and uncertainty retained; no false certainty | AI evaluation and event contract tests | AI detection | Draft |
-| FR-005 | Verification workflow and review UI/backend | Incident workflow; UC-03 | AI score alone cannot verify; decision is auditable | Domain transition and reviewer-permission tests | Verification | Draft |
-| FR-006 | Evidence metadata and object storage boundary | System and data-flow workflows; UC-04 | No public media access; scoped retrieval | Storage authorization and expiry tests | Evidence | Draft |
-| FR-007 | Backend incident service and PostgreSQL | System/incident workflows; UC-06/09 | Authoritative record; invalid transition denied; duplicates handled | Domain and database integration | Incident management | Draft |
-| FR-008 | Assignment service and Admin UI | Incident workflow; UC-05 | Only verified incidents assigned; action audited | Permission and state-transition tests | Response coordination | Draft |
-| FR-009 | Notification simulation component | System workflow; UC-07 | Simulation labeled; no live emergency contact | Configuration and end-to-end safety tests | Prototype integration | Draft |
-| FR-010 | Location metadata and optional map UI | Data flow; user-role workflows | Unknown precision disclosed; no fabricated location | Data validation and client fallback tests | Mobile integration | Draft |
-| FR-011 | Police client view and response service | User-role workflow; UC-04 | Scope enforced; permitted response changes audited | API permission and mobile workflow tests | Response coordination | Draft |
-| FR-012 | Hospital client view and readiness service | User-role workflow; UC-04 | Minimized scope; readiness changes audited | API permission and mobile workflow tests | Response coordination | Draft |
-| FR-013 | Admin client and backend capabilities | User-role workflow; UC-05 | Admin actions permission-checked and audited | API and role workflow tests | Admin capabilities | Draft |
-| FR-014 | Backend history/audit query and client | UC-08 | Scoped, ordered, non-editable history | API scope and integrity tests | Incident management | Draft |
-| FR-015 | Backend aggregate reporting | UC-08 | Reports label scope and limitations | Aggregation correctness/privacy tests | Later prototype increment | Draft |
-| FR-016 | Audit/event logging across backend | All workflows | Actor/time/outcome recorded without secrets | Audit persistence and redaction tests | Cross-cutting | Draft |
-| NFR-001–005 | Identity, authorization, validation, service boundaries | UC-01/05/06 | Authenticated protected calls; safe errors | Security/API test suite | Backend foundation | Draft |
-| NFR-006–008 | Evidence, privacy, and audit controls | UC-03/04/08 | Restricted media and attributable actions | Security/privacy review and integration tests | Cross-cutting | Draft |
-| NFR-009–010 | Persistence, idempotency, failure isolation | UC-02/06/09 | No silent verification or unintended duplicate work | Domain and fault-injection tests | Cross-cutting | Draft |
-| NFR-011–018 | Availability, performance, scalability, maintainability, UX, compatibility, recovery | All | Targets or matrices approved before claims | Environment-specific checks after targets are set | Deployment readiness | Open/Draft |
-| NFR-019 | AI evaluation | AI workflow; UC-02/09 | Approved data, documented false positive/negative measures | Reproducible evaluation protocol | AI evaluation | Draft |
-| NFR-020 | Prototype safety | System and incident workflows; UC-07 | No real emergency action | End-to-end safety review | All prototype phases | Draft |
+| Requirement ID | Requirement | Priority | Responsible component | Related workflow | Security implication | Acceptance criteria | Future implementation work | Planned test coverage | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| FR-001 | Authenticate human users | Must | Backend identity, Flutter | UC-01 | Credential protection | Valid enabled users authenticate; invalid users denied safely | Human auth and token lifecycle | API auth and client integration | REVISED_DRAFT |
+| FR-002 | Manage human users and roles | Must | Backend identity/admin | UC-05 | Privileged access and role audit | Non-admin cannot administer; changes audited | User/role domain and admin UI | API permission/domain | REVISED_DRAFT |
+| FR-003 | Process only authorized video | Must | VideoSource registry, AI service | UC-02/10 | Source permission and secret protection | Unauthorized/revoked source produces no accepted event | Source registry and input policy | Source authorization/ingestion | REVISED_DRAFT |
+| FR-004 | Generate distinct DetectionEvents | Must | AI service, backend intake | UC-02/06 | Provenance and service identity | Event retains source/time/uncertainty and is not candidate/incident | Event identity and submission | AI evaluation/event integration | REVISED_DRAFT |
+| FR-005 | Human-review AccidentCandidate | Must | Candidate service, reviewer UI | UC-03 | Object-scoped evidence and reviewer permission | Only authorized human may verify/reject; AI cannot decide | Candidate state/domain | Transition and reviewer tests | REVISED_DRAFT |
+| FR-006 | Manage EvidenceAsset lifecycle | Must | Backend evidence, object storage | UC-10/11 | Private media and scoped access | Only validated AVAILABLE asset retrievable | Upload validation, retention/deletion | Storage state/access tests | REVISED_DRAFT |
+| FR-007 | Intake and deduplicate events | Must | Backend event intake | UC-06/09 | Replay, flooding, machine identity | Same ID is idempotent; distinct events preserved | Authenticated intake and idempotency | Replay/duplicate integration | REVISED_DRAFT |
+| FR-008 | Create independent assignments | Must | Backend assignment service | UC-12 | Assignment target scope | Police/Hospital targets are separate records | Assignment creation and eligibility | Multi-agency domain/API | REVISED_DRAFT |
+| FR-009 | Track notification independently | Must | Backend notification | UC-07/12 | No unsafe external delivery | Delivery/read never changes response or incident state | Notification state service | Simulation safety/state tests | REVISED_DRAFT |
+| FR-010 | Preserve location provenance | Should | Backend location, Flutter | UC-13 | Sensitive location and uncertainty | Source/time/uncertainty shown; no fabricated precision | Provenance and correction model | Data validation/privacy | REVISED_DRAFT |
+| FR-011 | Police response per assignment | Must | Backend, Police client | UC-04/12 | Assigned-object authorization | Police update affects own assignment only and is simulated | Police response workflow | API scope/client workflow | REVISED_DRAFT |
+| FR-012 | Hospital readiness per assignment | Must | Backend, Hospital client | UC-04/12 | Data minimization | Hospital update affects own assignment; no treatment claim | Hospital readiness workflow | API scope/client workflow | REVISED_DRAFT |
+| FR-013 | Admin oversight | Must | Backend, Admin client | UC-05 | Least privilege and audit | Each admin action checks specific permission | Admin capabilities | Role/action tests | REVISED_DRAFT |
+| FR-014 | Read separate histories | Should | Backend history services | UC-08/12 | Scoped audit visibility | Incident and assignment histories ordered, attributable, read-only | History query/presentation | API scope/integrity | REVISED_DRAFT |
+| FR-015 | Aggregate reports | Could | Backend reporting | UC-08 | Privacy in aggregates | Scope/period/limitations shown; no unsupported claims | Aggregate query/reporting | Correctness/privacy | REVISED_DRAFT |
+| FR-016 | Audit security-relevant actions | Must | Backend AuditEvent | All | Secret redaction, integrity | Actor/time/target/outcome retained safely | Audit service and retention | Persistence/redaction | REVISED_DRAFT |
+| FR-017 | Associate multiple events to a candidate | Must | Candidate service | UC-06/09 | Preserve provenance | Events remain distinct; uncertain grouping reviewed | Association policy | Candidate grouping tests | REVISED_DRAFT |
+| FR-018 | Keep candidate separate from incident | Must | Candidate/incident domain | UC-03 | Prevent privilege/state escalation | Rejected/unverified candidate has no incident | Separate aggregates and links | Domain lifecycle tests | REVISED_DRAFT |
+| FR-019 | Create incident after verification | Must | Backend incident transaction | UC-03 | Authorized decision and atomicity | One linked OPEN incident only after human verification | Atomic verification/create transaction | Transaction/retry tests | REVISED_DRAFT |
+| FR-020 | Assign each agency independently | Must | Backend assignment service | UC-12 | Per-target object scope | One incident can have distinct Police and Hospital assignments | Target eligibility and histories | Multi-agency integration | REVISED_DRAFT |
+| FR-021 | Enforce assignment lifecycle | Must | Backend assignment service | UC-04/12 | Assigned-user authorization | Invalid transitions denied; reassignment preserves old history | Assignment state machine | Transition/property tests | REVISED_DRAFT |
+| FR-022 | Enforce separate incident lifecycle | Must | Backend incident service | Incident workflow | Incident-level permission | OPEN/RESPONSE_ACTIVE/RESOLVED/CLOSED separate from assignment | Incident state machine | Transition tests | REVISED_DRAFT |
+| FR-023 | Aggregate independent agency outcomes | Must | Backend incident service | UC-12 | No cross-agency disclosure/mutation | One agency's state never overwrites the other; resolution rule followed | Resolution aggregation | Partial response scenarios | REVISED_DRAFT |
+| FR-024 | Track Notification lifecycle | Must | Backend notification service | UC-07/12 | Simulation-only safety | Notification states do not imply acknowledgement | Notification history | Delivery/read/failure tests | REVISED_DRAFT |
+| FR-025 | Authorize scoped evidence upload | Must | Backend evidence, AI_SERVICE, storage adapter | UC-10 | Short-lived least privilege | One object/operation only; fallback documented | Upload authorization | Expiry/scope/replay tests | REVISED_DRAFT |
+| FR-026 | Validate evidence before availability | Must | Backend evidence, storage adapter | UC-10 | Integrity and quarantine | Failed/unchecked media is never AVAILABLE | Integrity/type/size/scanning policy | Upload fault/integrity tests | REVISED_DRAFT |
+| FR-027 | Authorize evidence retrieval | Must | Backend evidence, Flutter | UC-11 | Object-level access | No broad client credentials; every read scoped/audited | Restricted retrieval | Role/object authorization | REVISED_DRAFT |
+| FR-028 | Register/authorize VideoSources | Must | Backend source registry | UC-10/02 | Ownership and camera credentials | Every accepted event traces to authorized source | Registry and source status | Revocation/permission tests | REVISED_DRAFT |
+| FR-029 | Track location origin/correction | Must | Backend location provenance | UC-13 | Sensitive geolocation | Camera vs incident location distinct; corrections attributable | Provenance history | Correction/uncertainty tests | REVISED_DRAFT |
+| FR-030 | Record mandatory audit events | Must | Backend audit across domains | All | Audit integrity and secret exclusion | Auth, role, review, incident, assignment, media, correction events recorded | Event catalog/access/retention | Audit completeness/redaction | REVISED_DRAFT |
+| FR-031 | Handle non-ack/timeout/reassignment | Must | Backend assignment service | UC-12 | No emergency escalation | Manual overdue default; expiry only with approved policy | Overdue view/manual workflow | Timeout/reassignment tests | REVISED_DRAFT |
+| NFR-001 | Human authentication | Must | Backend identity | UC-01 | Token lifecycle | Protected calls require valid human identity | JWT issue/expiry/revocation | API security | REVISED_DRAFT |
+| NFR-002 | Object-level authorization | Must | Backend authorization | All protected flows | Prevent IDOR/privilege escalation | Role and target scope checked every request | Permission policy | Matrix authorization | REVISED_DRAFT |
+| NFR-003 | Password security | Must | Backend identity | UC-01/05 | No plaintext credential storage | Framework hashing; secrets absent from logs | Password/recovery policy | Security configuration | REVISED_DRAFT |
+| NFR-004 | Protected transport/service security | Must | API and service boundaries | UC-06/10/11 | Credential interception | Authenticated protected transport in shared environment | TLS/service identity config | Integration security | REVISED_DRAFT |
+| NFR-005 | Input validation/safe errors | Must | All service boundaries | All | Avoid injection and disclosure | Invalid payload safely denied | Validation/error conventions | API/media validation | REVISED_DRAFT |
+| NFR-006 | Evidence confidentiality | Must | Backend/storage | UC-10/11 | Private media | No public evidence access; scoped transfer | Private storage/access adapter | Storage security | REVISED_DRAFT |
+| NFR-007 | Privacy/minimization | Must | All components | UC-02/11/13 | Purpose, location, retention | Collect/expose only approved data | Privacy/retention policy | Privacy review | REVISED_DRAFT |
+| NFR-008 | Auditability | Must | Backend audit | All | Protect history | Attributable protected records | Audit access/retention | Audit tests | REVISED_DRAFT |
+| NFR-009 | Data integrity/idempotency | Must | Backend event/incident | UC-03/06/09 | Replay/duplicate prevention | Retry stable ID; atomic candidate-to-incident creation | Idempotency and transaction rules | Domain/integration tests | REVISED_DRAFT |
+| NFR-010 | Reliability/failure isolation | Must | AI/API/DB/storage/notify | All failure flows | No false state changes | Failures do not verify incident or expose failed evidence | Recovery/reconciliation | Fault injection | REVISED_DRAFT |
+| NFR-011 | Availability | TBD | Deployment architecture | All | Operational risk | Objectives set only after environment approval | Select environment/SLO | Later measurement | REVISED_DRAFT |
+| NFR-012 | Performance | TBD | AI/API/storage | UC-02/10/11 | Resource exhaustion | No numerical claim before representative benchmark | Select workload/hardware | Later benchmark | REVISED_DRAFT |
+| NFR-013 | Scalability | Should | AI/backend/data boundaries | UC-02/12 | Abuse/capacity controls | Workload assumptions remain explicit | Capacity and async design | Later load tests | REVISED_DRAFT |
+| NFR-014 | Maintainability | Should | All modules/docs | All | Change review | Terminology/contracts traceable | Module separation and ADRs | Review | REVISED_DRAFT |
+| NFR-015 | Observability | Should | Backend/AI/storage | Failure workflows | Privacy-conscious logging | Distinct source/event/asset/assignment outcomes | Health/log design | Operational checks | REVISED_DRAFT |
+| NFR-016 | Usability/accessibility | Should | Flutter | UC-01/03/04/11/12 | Safe uncertainty display | Errors, uncertainty, agency state clear | UX/accessibility criteria | Widget/workflow tests | REVISED_DRAFT |
+| NFR-017 | Compatibility | TBD | Client/services | All | Dependency/security support | Versions documented before build | Compatibility matrix | Later compatibility checks | REVISED_DRAFT |
+| NFR-018 | Recoverability | Should | DB/storage/infrastructure | Failure workflows | Backup/media lifecycle | Restore and deletion planned before deployment | Recovery procedures | Restore exercise | REVISED_DRAFT |
+| NFR-019 | AI evaluation | Must | AI evaluation | UC-02/09 | False positive/negative harm | Approved labeled data and limitations reported | Evaluation protocol | Reproducible evaluation | REVISED_DRAFT |
+| NFR-020 | Prototype safety | Must | Config/notification/response | UC-07/12 | No real-world dispatch | Simulated behavior only | Disable live integration paths | End-to-end safety review | REVISED_DRAFT |
+| NFR-021 | Machine identity | Must | Backend/AI service | UC-06/10 | Least privilege and rotation | Separate AI_SERVICE with bounded capabilities | Select service auth mechanism | Service-auth tests | REVISED_DRAFT |
+| NFR-022 | Evidence integrity | Must | Evidence/storage | UC-10 | Tampering/unsafe media | Validate object, type, size, integrity before AVAILABLE | Checksum/scanning policy | Integrity/failure tests | REVISED_DRAFT |
+| NFR-023 | Source authorization | Must | VideoSource registry/AI | UC-02/10 | Unauthorized CCTV access | Every event traces to authorized source | Registry/policy workflow | Source auth tests | REVISED_DRAFT |
+| NFR-024 | Location provenance | Must | Backend location | UC-13 | Sensitive/uncertain location | Origin, timestamp, uncertainty and correction retained | Location policy | Provenance/privacy tests | REVISED_DRAFT |
+| NFR-025 | Independent response states | Must | Incident/assignment/notification domains | UC-12 | Cross-agency state leakage | Independent histories; no dispatch on timeout | State aggregation rules | Multi-agency transition tests | REVISED_DRAFT |
 
 ## Traceability Notes
 
-- Acceptance evidence in this table refers to future test scenarios; it is not evidence that a test has run.
-- Detailed API schemas, field-level data models, and concrete test IDs are deferred until contracts and implementation owners are agreed.
-- Requirements with proposed authority or TBD targets must be resolved or explicitly accepted as deferred before the affected feature is implemented.
+- Acceptance criteria and tests are planned; no test result is claimed.
+- API schemas, physical fields, and concrete test IDs are deferred until approved implementation contracts.
+- Requirements with team, institutional, or provider decisions remain REVISED_DRAFT and must be resolved or explicitly deferred before the related feature is implemented.

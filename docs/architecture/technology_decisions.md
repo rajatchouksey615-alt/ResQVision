@@ -1,5 +1,7 @@
 # Technology Decisions
 
+**Status:** REVISED_DRAFT — planned stack and recommendations pending team approval.
+
 This is an index of the current planned stack and unresolved choices. A planned technology is not a claim that it is implemented or that a version/provider is approved. Record accepted significant choices as [architecture decision records](../decisions/README.md).
 
 ## Planned Stack
