@@ -1,6 +1,6 @@
 # Transaction and Integrity Design
 
-**Status:** PHASE_2_DESIGN_DRAFT — proposed Django/PostgreSQL transaction contract. No transaction service or database operation has been implemented.
+**Status:** Phase 2B transaction and integrity contract for the implemented Django/PostgreSQL schema. Cross-row state-transition services and object-storage workflows remain Phase 3 work; database model migrations alone do not implement these transactions.
 
 All authoritative writes are made by Django in PostgreSQL transactions. State, its transition history, and the corresponding successful business audit event commit together. A failed transaction leaves none of those authoritative changes committed. Authorization denials are recorded in a separate safe audit operation after the failed business transaction so rollback cannot erase the denial record. Never include passwords, tokens, raw media, signed URLs, or unrestricted request bodies in audit context.
 

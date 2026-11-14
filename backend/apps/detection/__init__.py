@@ -1,0 +1,1 @@
+"""AI detection observation application."""

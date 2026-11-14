@@ -1,13 +1,13 @@
 # Documentation
 
-This directory contains the Phase 1 revised documentation draft pending team approval, working conventions, and academic project notes for ResQVision. Documentation describes plans and decisions accurately; it must not present unimplemented behavior as complete.
+This directory contains the Phase 1 revised documentation draft pending team approval, Phase 2B database design/implementation records, working conventions, and academic project notes for ResQVision. Documentation distinguishes implemented persistence foundations from unimplemented workflows and integrations.
 
 ## Index
 
 - [requirements/](requirements/README.md): system specification, functional and non-functional requirements, use cases, permissions, traceability, scope, and constraints.
 - [architecture/](architecture/README.md): system and component architecture, overview, data flow, trust boundaries, technology choices, and open decisions.
 - [workflows/](workflows/README.md): end-to-end, AI, incident response, and role workflows.
-- [database_design/](database_design/README.md): conceptual entity relationships and deferred physical data dictionary/schema work.
+- [database_design/](database_design/README.md): implemented local PostgreSQL/Django schema baseline, ERD, data dictionary, constraints, lifecycle, and transaction design.
 - [api_documentation/](api_documentation/README.md): REST conventions, versioning, and error handling.
 - [testing/](testing/README.md): project testing approach and case template.
 - [security/](security/README.md): security baseline and documentation.

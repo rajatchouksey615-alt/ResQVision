@@ -125,6 +125,7 @@ Desktop.ini
 *.sqlite
 *.sqlite3
 *.db
+backend/.local-postgres/
 
 # Datasets and media are not routine source artifacts.
 datasets/

@@ -1,2 +1,7 @@
-# Phase 0 placeholder. Approved runtime dependencies will be selected and pinned
-# when backend implementation begins.
+# Runtime dependencies for the ResQVision Django foundation.
+# Django 5.2 is the LTS series; keep these exact versions in sync with the
+# compatibility record in backend/README.md.
+Django==5.2.19
+djangorestframework==3.18.3
+psycopg[binary]==3.3.9
+python-dotenv==1.2.4

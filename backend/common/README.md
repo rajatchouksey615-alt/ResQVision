@@ -1,3 +1,3 @@
 # Shared Backend Components
 
-This directory is reserved for small backend utilities and reusable components that have a clear need across applications. Keep domain-specific rules within their owning application and avoid creating a general-purpose layer without a concrete use case.
+`common.models` provides UUID primary keys and append-only ORM behavior for event/history records. Domain-specific validation and relationships remain in their owning Django apps. Append-only ORM checks are a protection against ordinary Django writes; database-role privileges and operational controls are still required for stronger audit protection.

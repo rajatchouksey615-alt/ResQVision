@@ -1,3 +1,3 @@
 # Deployment Documentation
 
-Deployment is future work. There is no configured local stack, container orchestration, cloud account, production environment, or deployment URL in Phase 0.
+Deployment is future work. A local PostgreSQL Compose definition and local development configuration exist, but the container was not started in this implementation environment. There is no cloud account, production environment, production credential, or deployment URL.

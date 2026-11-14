@@ -1,17 +1,17 @@
 # Local Development Guide
 
-**Status:** Planning guide. No service is runnable from this Phase 0 repository.
+**Status:** Local PostgreSQL/Django foundation is runnable. Application APIs and other service modules are not implemented.
 
 ## Planned Local Services
 
-The expected development environment may include the mobile app, Django backend, PostgreSQL, and AI service. Docker is planned for supporting local services, but no Compose file or containers are configured. Agree supported tool versions before implementation.
+The implemented local environment supports the Django database foundation with PostgreSQL 18.7. `infrastructure/docker/compose.database.yml` defines an optional database container bound to loopback port 5433. If Docker Engine is unavailable, use a dedicated local PostgreSQL instance on that port. No mobile app, AI service, object-storage provider, or emergency-service connection is configured.
 
 ## Setup Conventions
 
-1. Install approved tools for the module being developed using their official instructions.
-2. Keep each module's environment isolated and follow its README.
-3. Create a private local environment file from .env.example only when the relevant service is implemented. Use local-only placeholder credentials and never commit the private file.
-4. Start only services required for the task and use synthetic or approved data.
-5. Follow module-specific validation instructions and stop services when finished.
+1. Install Python 3.14.10 and create the backend environment from `backend/README.md`.
+2. Create a private repository-root `.env` from `.env.example`, then replace placeholder values with local-only credentials. The file is ignored by Git.
+3. Start only the dedicated local PostgreSQL database, either with the Compose file or a separate local cluster on port 5433. The configured role/database default to `resqvision_app`/`resqvision_dev`; do not point development or tests at a shared or production database.
+4. From `backend/`, run `python manage.py migrate`, `python manage.py check`, and `python -m pytest -q` using the project virtual environment. Pytest creates a separate test database.
+5. Use synthetic data only and stop local database services when finished.
 
 Map, object storage, and Firebase providers are not configured. Do not connect the prototype to real emergency services.

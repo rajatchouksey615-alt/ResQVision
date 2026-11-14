@@ -1,0 +1,1 @@
+"""ResQVision Django application modules."""

@@ -1,6 +1,6 @@
 # Phase 2 PostgreSQL Data Dictionary
 
-**Status:** PHASE_2_DESIGN_DRAFT — proposed field-level contract; review before Django model implementation. This document specifies fields only and does not represent a database deployment or migration state.
+**Status:** Phase 2B physical field dictionary, synchronized with Django models and migrations. The local development database has these migrations applied; no production database is configured.
 
 ## Conventions
 
@@ -13,14 +13,14 @@
 
 ## Django-Managed Authentication Tables
 
-These tables are provided by Django auth and must not be duplicated. The exact framework-managed columns follow the selected Django version and configured `DEFAULT_AUTO_FIELD`.
+These tables are provided by Django auth and must not be duplicated. The listed key types match Django 5.2.19 migrations with the configured custom UUID user model and `DEFAULT_AUTO_FIELD=BigAutoField`. Existing Django auth migrations define Group/Permission keys as `integer` (`AutoField`); the project default does not rewrite already-defined framework migration fields.
 
 | Table/concept | Fields and type decisions | Purpose and constraints |
 |---|---|---|
 | `accounts_user` / `APP_USER` | `id uuid PK`; `password varchar(128)`; `last_login timestamptz NULL`; `is_superuser boolean NOT NULL DEFAULT false`; `email varchar(254) NOT NULL UNIQUE`; `first_name varchar(150) NOT NULL DEFAULT ''`; `last_name varchar(150) NOT NULL DEFAULT ''`; `is_staff boolean NOT NULL DEFAULT false`; `is_active boolean NOT NULL DEFAULT true`; `date_joined timestamptz NOT NULL` | Custom `AbstractUser` subclass selected before the first migration; remove the inherited `username` field (`username = None`), use a custom manager, and set `USERNAME_FIELD='email'`. Normalize email to trimmed lowercase. `is_active=false` disables authentication; ordinary account removal is deactivation/anonymization, not cascade deletion. `is_superuser` is tightly controlled and never inferred from an app role. Password is Django's encoded hash only. Do not add raw tokens, response data, or source credentials. |
-| `auth_group` / Role | `id bigint PK`; `name varchar(150) NOT NULL UNIQUE` | Django Group is the role catalog. Seed the stable group names `ADMIN`, `POLICE`, `HOSPITAL`; do not create a second Role table. |
-| `auth_permission`, `auth_group_permissions` | Django-generated permission IDs, content-type relation and unique group/permission join | Django permissions define action capabilities; object/organization scope remains a backend authorization check. |
-| `accounts_user_groups`, `accounts_user_user_permissions` | Django-generated user/role and user/permission join rows with unique pairs | Framework-managed M2M relations. Do not manually create parallel join tables. |
+| `auth_group` / Role | `id integer PK`; `name varchar(150) NOT NULL UNIQUE` | Django Group is the role catalog. Seed the stable group names `ADMIN`, `POLICE`, `HOSPITAL`; do not create a second Role table. |
+| `auth_permission`, `auth_group_permissions` | `auth_permission.id integer`; `content_type_id integer`; `auth_group_permissions.group_id integer`, `permission_id integer`; unique group/permission pair | Django permissions define action capabilities; object/organization scope remains a backend authorization check. |
+| `accounts_user_groups`, `accounts_user_user_permissions` | User FK is UUID; Group/Permission FK is integer; unique pairs | Framework-managed M2M relations. Do not manually create parallel join tables. |
 
 ## Organization and Membership
 
@@ -43,7 +43,7 @@ These tables are provided by Django auth and must not be duplicated. The exact f
 | `id` | `uuid` | No / Django UUIDv4 | PK | Membership identity. |
 | `user_id` | `uuid` | No / none | FK `accounts_user`, PROTECT | Human account. Sensitive identity relation. |
 | `organization_id` | `uuid` | No / none | FK `organizations_organization`, PROTECT | Organization scope. |
-| `role_group_id` | `bigint` | No / none | FK `auth_group`, PROTECT | Django role group scoped to this organization; must be `POLICE` or `HOSPITAL` in this table. |
+| `role_group_id` | `integer` | No / none | FK `auth_group`, PROTECT | Django 5.2.19 Group uses its migration-defined `AutoField`; role group is scoped to this organization and must be `POLICE` or `HOSPITAL` in this table. |
 | `status` | `varchar(16)` | No / `ACTIVE` | Check; `(organization_id, role_group_id, status)` | `ACTIVE`, `SUSPENDED`, `REVOKED`; access requires ACTIVE and active organization/user. |
 | `created_at` | `timestamptz` | No / Django timestamp | — | Membership creation; role changes are audited. |
 | `updated_at` | `timestamptz` | No / Django timestamp | — | Last membership state change. |
@@ -91,7 +91,7 @@ For `source_type=CONTROLLED_FILE`, authorization for processing requires one sou
 | `received_at` | `timestamptz` | No / Django timestamp | `(received_at)` | Backend acceptance time; immutable. |
 | `processing_outcome` | `varchar(20)` | No / none | Check | `OBSERVATION` or `UNCERTAIN`; a DetectionEvent represents an observation. No-observation and processing-failure outcomes do not create DetectionEvent rows. Neither value means a verified incident. |
 | `confidence` | `numeric(5,4)` | Yes / NULL | — | Optional model score in `[0,1]`; not a verification decision. |
-| `payload_sha256` | `char(64)` | Yes / NULL | — | Optional lowercase SHA-256 digest of the accepted canonical event payload; no raw media. |
+| `payload_sha256` | `varchar(64)` | Yes / NULL | — | Optional lowercase SHA-256 digest of the accepted canonical event payload; no raw media. |
 | `metadata_schema_version` | `smallint` | No / `1` | — | Version for auxiliary event metadata. |
 | `auxiliary_metadata` | `jsonb` | No / `{}` | — | Versioned model-specific, non-core metadata only; object shape/size allow-listed by application. Sensitive if it contains location hints. |
 
@@ -163,7 +163,7 @@ Resolution/closure actor, reason and time are retained in IncidentStatusHistory 
 | `original_filename` | `varchar(255)` | Yes / NULL | — | Sanitized display metadata only; can contain sensitive information. |
 | `media_type` | `varchar(127)` | Yes / NULL | — | Validated detected MIME type; allow-list enforced by backend. |
 | `size_bytes` | `bigint` | Yes / NULL | Check `> 0` | Actual byte count; required before AVAILABLE; enforce configured limit in backend. |
-| `checksum_sha256` | `char(64)` | Yes / NULL | Format check | Lowercase SHA-256 of object bytes; required before AVAILABLE. |
+| `checksum_sha256` | `varchar(64)` | Yes / NULL | Format check | Lowercase SHA-256 of object bytes; required before AVAILABLE. |
 | `status` | `varchar(20)` | No / `PENDING_UPLOAD` | Check; `(status, created_at)` | `PENDING_UPLOAD`, `UPLOADING`, `QUARANTINED`, `AVAILABLE`, `FAILED`, `EXPIRED`, `DELETED`. |
 | `scan_status` | `varchar(16)` | No / `PENDING` | Check | `PENDING`, `NOT_REQUIRED`, `PASSED`, `FAILED`; AVAILABLE requires NOT_REQUIRED or PASSED. |
 | `validation_completed_at` | `timestamptz` | Yes / NULL | — | Required before AVAILABLE; backend has completed applicable validation. |

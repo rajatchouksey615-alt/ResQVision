@@ -1,5 +1,16 @@
 # Backend Applications
 
-This directory is reserved for focused Django applications. Candidate domains such as identity, incidents, evidence metadata, and notifications require requirements and architecture review before creation; no models, migrations, or API endpoints are defined in Phase 0.
+Each focused Django app owns one persistence domain. Database models and migrations are implemented for:
 
-Keep domain logic cohesive, document ownership and dependencies, and avoid coupling application modules through undocumented internal behavior.
+- `accounts`: custom human user model and Django-managed group seeding.
+- `organizations`: agencies, source owners, and organization-scoped group memberships.
+- `sources`: authorized video source registry.
+- `detection`: accepted AI observation provenance and source-scoped idempotency.
+- `incidents`: candidates, event association, human review, authoritative incidents, and incident history.
+- `evidence`: private object metadata, typed associations, and upload sessions.
+- `locations`: typed location claims and correction history.
+- `responses`: independent target assignments, append-only activities, and assignment histories.
+- `notifications`: simulated notifications and delivery attempts.
+- `audit`: append-only cross-domain audit events.
+
+No API endpoints, real emergency dispatch, object-storage provider, or AI-service integration is implemented in this phase. Keep business transitions and cross-row authorization in the owning domain service when Phase 3 begins.

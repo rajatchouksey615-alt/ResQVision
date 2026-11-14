@@ -1,5 +1,9 @@
-# Django Configuration Location
+# Django Configuration
 
-This directory is reserved for the future Django project configuration package, including URL routing, ASGI/WSGI entry points, and settings organization. No Django files or settings exist yet.
+The package contains the Django project entry points and settings for the Phase 2B database foundation.
 
-Configuration must read secrets and environment-specific values from the process environment. Keep local overrides and credentials out of version control. Document any settings split and ensure security defaults are explicit before deployment.
+- `settings/base.py` defines installed apps, the custom account model, UTC timestamps, and PostgreSQL environment configuration.
+- `settings/development.py` is local-only. It is not a deployment profile.
+- `settings/test.py` uses PostgreSQL and a test-only secret/password hasher for the automated suite.
+- Root `.env` is loaded only when present and is ignored by Git. Never place shared or production secrets in it.
+- `urls.py` exposes only framework admin routing; application APIs are not implemented.

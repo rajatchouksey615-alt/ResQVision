@@ -1,0 +1,1 @@
+"""Video source registry application."""

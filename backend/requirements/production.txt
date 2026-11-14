@@ -1,2 +1,3 @@
-# Phase 0 placeholder. Production dependency constraints will be documented
-# after runtime dependencies and deployment targets are approved.
+# Runtime dependencies only. A deployment-specific Psycopg build, server, and
+# security configuration must be selected before any production deployment.
+-r base.txt

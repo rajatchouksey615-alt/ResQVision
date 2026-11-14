@@ -1,6 +1,6 @@
 # Requirements Traceability
 
-**Status:** REVISED_DRAFT — pending team approval. Planned tests are not implemented or executed.
+**Status:** REVISED_DRAFT — pending team approval. Phase 2B implements and tests the database persistence foundation only; end-to-end, API, authorization, and workflow acceptance tests remain future work.
 
 | Requirement ID | Requirement | Priority | Responsible component | Related workflow | Security implication | Acceptance criteria | Future implementation work | Planned test coverage | Status |
 |---|---|---|---|---|---|---|---|---|---|
@@ -51,7 +51,7 @@
 | NFR-014 | Maintainability | Should | All modules/docs | All | Change review | Terminology/contracts traceable | Module separation and ADRs | Review | REVISED_DRAFT |
 | NFR-015 | Observability | Should | Backend/AI/storage | Failure workflows | Privacy-conscious logging | Distinct source/event/asset/assignment outcomes | Health/log design | Operational checks | REVISED_DRAFT |
 | NFR-016 | Usability/accessibility | Should | Flutter | UC-01/03/04/11/12 | Safe uncertainty display | Errors, uncertainty, agency state clear | UX/accessibility criteria | Widget/workflow tests | REVISED_DRAFT |
-| NFR-017 | Compatibility | TBD | Client/services | All | Dependency/security support | Versions documented before build | Compatibility matrix | Later compatibility checks | REVISED_DRAFT |
+| NFR-017 | Compatibility | TBD | Client/services | All | Dependency/security support | Database foundation versions pinned; client/service deployment compatibility remains to be verified | Complete compatibility matrix | Later compatibility checks | REVISED_DRAFT |
 | NFR-018 | Recoverability | Should | DB/storage/infrastructure | Failure workflows | Backup/media lifecycle | Restore and deletion planned before deployment | Recovery procedures | Restore exercise | REVISED_DRAFT |
 | NFR-019 | AI evaluation | Must | AI evaluation | UC-02/09 | False positive/negative harm | Approved labeled data and limitations reported | Evaluation protocol | Reproducible evaluation | REVISED_DRAFT |
 | NFR-020 | Prototype safety | Must | Config/notification/response | UC-07/12 | No real-world dispatch | Simulated behavior only | Disable live integration paths | End-to-end safety review | REVISED_DRAFT |
@@ -63,7 +63,7 @@
 
 ## Phase 2 Database Responsibility Traceability
 
-This supplements the component/workflow matrix above with the proposed database owner and integrity mechanism. Tables and constraints are specified in the [database design index](../database_design/README.md); none is implemented yet.
+This supplements the component/workflow matrix above with the database owner and integrity mechanism. The MVP schema and model constraints are implemented in Django migrations and covered by database tests; complete requirement behavior and cross-row service rules remain unimplemented.
 
 | Requirement IDs | Database responsibility | Proposed tables and integrity design |
 |---|---|---|
@@ -82,6 +82,6 @@ This supplements the component/workflow matrix above with the proposed database 
 
 ## Traceability Notes
 
-- Acceptance criteria and tests are planned; no test result is claimed.
-- API schemas, physical fields, and concrete test IDs are deferred until approved implementation contracts.
+- The PostgreSQL-backed database model suite passes 50 tests. This does not claim that the functional requirements, APIs, or end-to-end workflows are complete.
+- API schemas and concrete end-to-end test IDs are deferred until approved implementation contracts. Physical database fields and persistence checks are specified in the implemented [database design](../database_design/README.md).
 - Requirements with team, institutional, or provider decisions remain REVISED_DRAFT and must be resolved or explicitly deferred before the related feature is implemented.

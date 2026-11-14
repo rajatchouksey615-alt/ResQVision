@@ -1,8 +1,8 @@
 # Phase 2 Relational Entity Relationship Design
 
-**Status:** PHASE_2_DESIGN_DRAFT — logical and physical proposal; pending policy/provider review. This document is a design artifact and makes no claim about deployed database objects.
+**Status:** Phase 2B logical ERD, synchronized with the local Django model/migration baseline. Local migrations have been applied; this does not represent a production deployment. Policy/provider decisions remain open.
 
-This ERD describes the proposed PostgreSQL tables at implementation-planning level. The separate [schema specification](database_schema_specification.md) and [data dictionary](data_dictionary.md) define ownership, keys, fields and types. This is a design artifact, not executable SQL or a Django model file.
+This ERD describes the MVP entities represented by Django models. The [schema specification](database_schema_specification.md) and [data dictionary](data_dictionary.md) define ownership, keys, fields and types. Framework-managed tables are shown only where they clarify role relationships.
 
 ## Mermaid ERD
 
@@ -16,25 +16,25 @@ erDiagram
         timestamptz date_joined
     }
     AUTH_GROUP {
-        bigint id PK
+        integer id PK
         varchar name UK
     }
     AUTH_PERMISSION {
-        bigint id PK
+        integer id PK
         varchar codename
     }
     ORGANIZATION {
         uuid id PK
         varchar code UK
         varchar organization_kind
-        varchar status
+        boolean is_active
     }
     ORGANIZATION_MEMBERSHIP {
         uuid id PK
         uuid user_id FK
         uuid organization_id FK
-        bigint role_group_id FK
-        boolean is_active
+        integer role_group_id FK
+        varchar status
     }
     VIDEO_SOURCE {
         uuid id PK

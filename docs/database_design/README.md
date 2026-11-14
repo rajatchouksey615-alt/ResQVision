@@ -1,6 +1,6 @@
 # PostgreSQL Database Design
 
-**Status:** PHASE_2_DESIGN_DRAFT — implementation-ready proposal for team review. It does not create or claim database tables, Django models, or migrations.
+**Status:** Phase 2B database foundation implemented locally. These documents describe the logical and physical design represented by the Django models and migrations; institutional retention, authorization, and operational policy decisions remain pending.
 
 PostgreSQL is the authoritative store for structured application data. Object storage holds evidence bytes; Django owns persistence and authorization. The AI service submits observations but cannot verify candidates, create incidents, or change response state. Police and Hospital assignments have independent lifecycles.
 
@@ -16,4 +16,4 @@ PostgreSQL is the authoritative store for structured application data. Object st
 
 ## Status and Scope
 
-All details are proposed design, not deployed behavior. Retention durations, legal-hold handling, exact PostgreSQL/Django versions, object-storage provider, reviewer authority, assignment authority, and timeout policy remain subject to the approvals listed in the documents. Phase 2 introduces documentation only: no Django initialization, model code, migrations, credentials, or database objects are part of this design.
+The Django project and MVP schema migrations exist and have been applied to a dedicated local PostgreSQL 18.7 development database. PostgreSQL objects exist only in that local database; this does not represent a production deployment. Python 3.14.10, Django 5.2.19, Django REST Framework 3.18.3, Psycopg 3.3.9, and PostgreSQL 18.7 are the current development compatibility baseline. Retention durations, legal-hold handling, object-storage provider, reviewer/assignment authority, and timeout policy remain subject to institutional/team approval. APIs, domain transition services, storage operations, and real emergency integrations are out of scope for Phase 2B.

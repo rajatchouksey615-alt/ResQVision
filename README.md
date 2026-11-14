@@ -6,7 +6,7 @@
 
 ResQVision is an academic major project exploring how computer vision and coordinated software workflows could help identify potential road accidents from authorized CCTV or video sources. The planned system produces AI DetectionEvents, associates them with AccidentCandidates, creates authoritative AccidentIncidents only after human verification, and presents independently tracked Police and Hospital assignments to authorized users.
 
-This repository is currently in **Phase 1: Requirements Engineering and System Design**. Phase 0 established the repository foundation. The Phase 1 documentation is a **REVISED_DRAFT pending team approval**; the mobile application, backend, AI service, database schema, and infrastructure services have not been implemented.
+The project is in **Phase 2B: Database Foundation**. Phase 1 requirements and architecture documents remain a **REVISED_DRAFT pending team approval**. A local Django/PostgreSQL data foundation and its schema tests are implemented; API endpoints, mobile and AI services, object storage, and deployment integrations are not.
 
 ## Problem Statement
 
@@ -22,7 +22,7 @@ Accident information may reach response organizations late or without consistent
 
 ## Core Features
 
-The following capabilities are planned. None is implemented yet.
+These user-facing capabilities remain planned. The database foundation persists the domain records, but the workflows and integrations below are not implemented.
 
 - Video and CCTV input processing for vehicle detection and tracking.
 - Accident candidate identification followed by verification logic.
@@ -36,9 +36,9 @@ The following capabilities are planned. None is implemented yet.
 The planned system has four main parts:
 
 - **Mobile app:** Flutter and Dart interfaces for Admin, Police, and Hospital users. It will communicate with the backend API and will not access the database directly.
-- **Backend:** Python, Django, Django REST Framework, and PostgreSQL for API access, authentication and authorization, incident business logic, evidence metadata, and notification coordination.
+- **Backend:** Python, Django, Django REST Framework, and PostgreSQL. The database foundation and custom account model are implemented; APIs, authentication flows, domain services, and notification coordination remain future work.
 - **AI service:** Python, YOLO, OpenCV, PyTorch, and NumPy for authorized video processing, object detection/tracking, DetectionEvent generation, temporal analysis, and evidence generation. It cannot verify candidates or create incidents.
-- **Infrastructure and documentation:** Docker conventions and supporting deployment plans will be introduced when the project reaches the relevant phase. Technical decisions and workflows are documented under docs.
+- **Infrastructure and documentation:** A local PostgreSQL Compose definition and database implementation notes are present. No container or production deployment is running. Technical decisions and workflows are documented under docs.
 
 The intended flow is authorized VideoSource input to AI DetectionEvents, backend candidate association, human verification, and authoritative incident creation. Evidence, incident, each agency assignment, and notification delivery have separate backend-owned lifecycles. Integration contracts and physical implementation details remain to be designed.
 
@@ -67,7 +67,7 @@ Role permissions and workflows are in revised draft and pending team approval. P
 ## Repository Structure
 
 - mobile_app: Flutter application foundation, architecture notes, assets, and test placeholders.
-- backend: Django service foundation, requirements placeholders, configuration and application boundaries, and test placeholders.
+- backend: Django configuration, domain models, migrations, and PostgreSQL-backed tests; API implementation remains future work.
 - ai_service: video analysis service foundation, source boundaries, model and dataset policies, and test placeholders.
 - infrastructure: future development and deployment configuration conventions.
 - docs: requirements, architecture, workflows, database, API, testing, security, deployment, decisions, and academic project documentation.
@@ -79,7 +79,7 @@ The project is phase-based and feature-driven, with test-driven development appl
 
 ## Local Development Overview
 
-The current requirements/design phase does not install dependencies or provide runnable services. Review the module READMEs and docs/deployment/local_development.md for the intended setup approach and the decisions still pending. Do not place real credentials in the repository. Provider-specific service setup will be documented only after the team selects providers.
+See [docs/deployment/local_development.md](docs/deployment/local_development.md) for the local database foundation setup. Use local-only credentials from a private `.env`; do not commit it. The Compose database service is available for a running Docker Engine, and the backend can also use a dedicated local PostgreSQL cluster on port 5433. Provider-specific services remain unconfigured.
 
 ## Security Principles
 
@@ -96,7 +96,7 @@ ResQVision is an academic prototype. It must not send real emergency alerts to p
 
 ## Testing Strategy
 
-Use test-driven development for feature work: define expected behavior, add focused tests, implement the smallest useful change, and run relevant checks before review. Add unit, integration, API, widget, and evaluation tests as appropriate to each module. The repository currently has test directory placeholders only and does not claim an executable test suite.
+Use test-driven development for feature work. The Django foundation currently has 50 PostgreSQL-backed tests for identity, audit, source, detection, candidate/incident, location, evidence, response, and notification constraints. API, mobile, AI, storage-adapter, and system integration tests remain future work.
 
 ## Team Information
 
@@ -104,8 +104,10 @@ ResQVision is an academic major project for a team of four. Team member names an
 
 ## Project Status
 
-- Current phase: **Phase 1 — Requirements Engineering and System Design (REVISED_DRAFT, pending team approval)**
-- Repository modules: planned; implementation has not started.
+- Current phase: **Phase 2B — Database Foundation**
+- Phase 1 specifications: **REVISED_DRAFT, pending team approval**
+- Database: local Django models and migrations applied to a dedicated PostgreSQL development database; no production database or service is configured.
+- API, mobile app, and AI service: not implemented.
 - Emergency service integrations: disabled and out of scope without explicit authorization.
 - Map and object storage providers: pending selection.
 - License: pending team and institutional decision; see LICENSE_DECISION.md.
