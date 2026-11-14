@@ -2,20 +2,24 @@
 
 ## Objectives
 
-- Establish maintainable repository and engineering foundations for a four-member team.
-- Design a modular architecture for video analysis, candidate verification, incident management, and role-based access.
-- Explore how evidence metadata and incident status workflows can support a prototype.
-- Evaluate AI behavior with approved data and documented limitations.
-- Prepare clear technical and academic documentation.
+- Maintain a modular foundation for a four-member team.
+- Specify a system architecture for approved video analysis, candidate verification, incident management, and role-based access.
+- Define evidence metadata, incident transitions, simulated response workflows, security boundaries, and traceable acceptance criteria.
+- Plan AI evaluation on approved data with documented uncertainty and limitations.
+- Record unresolved product and technical decisions for team review before implementation.
 
-## Scope
+## Phase 1 Scope
 
-The planned prototype may process approved video, identify and verify accident candidates, manage incident records, and present simulated coordination workflows through role-based interfaces.
+Phase 1 produces requirements and high-level system design. It covers the planned Flutter client, Django REST backend, PostgreSQL ownership, independent AI service, evidence-storage boundary, notification simulation, user roles, and end-to-end workflows. It does not implement services, database schema, migrations, API endpoints/contracts, or production configuration.
+
+## Planned Prototype Scope
+
+The future prototype may process approved video, generate and verify accident candidates, manage backend-owned incident records, and present simulated coordination workflows to authorized users.
 
 ## Out of Scope
 
 Real emergency dispatch, ambulance deployment, live operational alerts, and automatic confirmation of accidents are out of scope. Provider selection, deployment, operational readiness, and real-world integration require separate review and authorization.
 
-## Phase 0
+## Current Implementation Status
 
-Phase 0 creates repository structure, standards, and documentation templates only. It does not initialize the application frameworks or implement services.
+The repository has completed its foundation setup and is now in the requirements/design phase. Mobile, backend, AI, database, and infrastructure services remain unimplemented.

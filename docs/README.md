@@ -1,11 +1,11 @@
 # Documentation
 
-This directory contains the requirements, design templates, working conventions, and academic project notes for ResQVision. Documentation describes plans and decisions accurately; it must not present unimplemented behavior as complete.
+This directory contains the Phase 1 requirements and system design drafts, working conventions, and academic project notes for ResQVision. Documentation describes plans and decisions accurately; it must not present unimplemented behavior as complete.
 
 ## Index
 
-- [requirements/](requirements/README.md): functional and non-functional requirements, scope, and constraints.
-- [architecture/](architecture/README.md): system and component architecture and technology decisions.
+- [requirements/](requirements/README.md): system specification, functional and non-functional requirements, use cases, permissions, traceability, scope, and constraints.
+- [architecture/](architecture/README.md): system and component architecture, overview, data flow, trust boundaries, technology choices, and open decisions.
 - [workflows/](workflows/README.md): end-to-end, AI, incident response, and role workflows.
 - [database_design/](database_design/README.md): future entity relationship and data dictionary documentation.
 - [api_documentation/](api_documentation/README.md): REST conventions, versioning, and error handling.

@@ -6,7 +6,7 @@
 
 ResQVision is an academic major project exploring how computer vision and coordinated software workflows could help identify potential road accidents from CCTV or video input. The planned system will analyze video, identify accident candidates, apply verification logic, capture relevant evidence, create incident records through a backend, and present those records to authorized Admin, Police, and Hospital users.
 
-This repository is currently in **Phase 0: Project Foundation and Repository Setup**. The structure and documentation are being established; the mobile application, backend, and AI service are planned and have not been implemented.
+This repository is currently in **Phase 1: Requirements Engineering and System Design**. Phase 0 established the repository foundation. Phase 1 is producing reviewable requirements and architecture documentation; the mobile application, backend, AI service, database schema, and infrastructure services have not been implemented.
 
 ## Problem Statement
 
@@ -22,7 +22,7 @@ Accident information may reach response organizations late or without consistent
 
 ## Core Features
 
-The following capabilities are planned. None is implemented in Phase 0.
+The following capabilities are planned. None is implemented yet.
 
 - Video and CCTV input processing for vehicle detection and tracking.
 - Accident candidate identification followed by verification logic.
@@ -53,7 +53,7 @@ The intended flow is video input to AI candidate analysis and verification, then
 | Push notifications | Firebase Cloud Messaging planned; credentials and live delivery are not configured |
 | Maps | Provider pending selection |
 | Media storage | Object storage planned; provider pending selection |
-| Development environment | Docker planned; no services are configured in Phase 0 |
+| Development environment | Docker planned; no services are configured yet |
 
 ## User Roles
 
@@ -74,11 +74,11 @@ Role permissions and workflows must be specified and reviewed before implementat
 
 ## Development Roadmap
 
-The project is phase-based and feature-driven, with test-driven development applied as executable features are added. Phase 0 establishes the repository and standards. Later phases will be planned and approved by the team before implementation. Likely work areas include requirements and design, service foundations, role and incident workflows, AI candidate analysis and verification, integration, evaluation, and deployment preparation. This is an outline, not a claim that those phases have started or that their ordering is final.
+The project is phase-based and feature-driven, with test-driven development applied as executable features are added. Phase 0 established repository structure and standards; Phase 1 documents requirements and system design. Later implementation and evaluation phases will be planned and reviewed by the team. Likely work areas include service foundations, role and incident workflows, AI candidate analysis and verification, integration, evaluation, and deployment preparation. This roadmap does not claim that any service implementation has started.
 
 ## Local Development Overview
 
-Phase 0 does not install dependencies or provide runnable services. Review the module READMEs and docs/deployment/local_development.md for the intended setup approach and the decisions still pending. Do not place real credentials in the repository. Provider-specific service setup will be documented only after the team selects providers.
+The current requirements/design phase does not install dependencies or provide runnable services. Review the module READMEs and docs/deployment/local_development.md for the intended setup approach and the decisions still pending. Do not place real credentials in the repository. Provider-specific service setup will be documented only after the team selects providers.
 
 ## Security Principles
 
@@ -95,7 +95,7 @@ ResQVision is an academic prototype. It must not send real emergency alerts to p
 
 ## Testing Strategy
 
-Use test-driven development for feature work: define expected behavior, add focused tests, implement the smallest useful change, and run relevant checks before review. Add unit, integration, API, widget, and evaluation tests as appropriate to each module. Phase 0 contains test directory placeholders only; it does not claim an executable test suite.
+Use test-driven development for feature work: define expected behavior, add focused tests, implement the smallest useful change, and run relevant checks before review. Add unit, integration, API, widget, and evaluation tests as appropriate to each module. The repository currently has test directory placeholders only and does not claim an executable test suite.
 
 ## Team Information
 
@@ -103,7 +103,7 @@ ResQVision is an academic major project for a team of four. Team member names an
 
 ## Project Status
 
-- Current phase: **Phase 0 — Project Foundation and Repository Setup**
+- Current phase: **Phase 1 — Requirements Engineering and System Design**
 - Repository modules: planned; implementation has not started.
 - Emergency service integrations: disabled and out of scope without explicit authorization.
 - Map and object storage providers: pending selection.

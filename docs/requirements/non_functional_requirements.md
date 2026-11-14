@@ -1,9 +1,27 @@
 # Non-Functional Requirements
 
-**Status:** Template; measurable targets are pending team review.
+**Status:** Draft for team review.
+Unapproved numeric performance, capacity, and availability targets are explicitly TBD; this document does not imply operational readiness.
 
-| ID | Quality area | Requirement and measurement | Priority | Verification method | Status |
+| ID | Quality area | Requirement | Priority | Verification | Status |
 |---|---|---|---|---|---|
-| NFR-001 | Security | Define the expected control and how it will be checked | TBD | Review or test | Draft |
-
-Consider security, privacy, reliability, usability, accessibility, performance, maintainability, portability, observability, and resource use. Targets must be realistic for an academic prototype and must not imply operational emergency-service readiness.
+| NFR-001 | Authentication | Protected backend operations shall require a valid authenticated identity; token lifetime, refresh, revocation, and logout behavior shall be agreed before implementation. | Must | API security tests and design review | Draft |
+| NFR-002 | Authorization | Backend authorization shall enforce role and object-level scope for every protected read and state change; client-side hiding alone is insufficient. | Must | Permission matrix tests and security review | Draft |
+| NFR-003 | Password security | Credentials shall be handled using framework-supported password hashing and shall never be logged or stored in plaintext. Password policy and recovery flow are TBD. | Must | Configuration review and security tests | Draft |
+| NFR-004 | Transport and service security | Client and service traffic shall use authenticated protected transport in any shared environment. AI-service identity and key rotation design are TBD. | Must | Deployment review and integration tests | Draft |
+| NFR-005 | Input and error handling | External inputs shall be validated at trust boundaries; errors shall be stable and useful without exposing secrets, stack traces, or unauthorized incident details. | Must | API validation tests and review | Draft |
+| NFR-006 | Evidence confidentiality | Evidence media shall not be publicly accessible by default; access shall be authorized and temporary or otherwise constrained. Encryption and provider-specific controls are TBD. | Must | Storage-access tests and security review | Draft |
+| NFR-007 | Privacy and minimization | Collect, expose, and retain only data needed for the approved prototype purpose. Source permissions, location precision, retention periods, and deletion timing are TBD. | Must | Data-flow and privacy review | Draft |
+| NFR-008 | Auditability | Security-relevant actions and incident transitions shall be attributable and protected from ordinary user alteration; retention and privileged audit access are TBD. | Must | Audit workflow tests and review | Draft |
+| NFR-009 | Data integrity | Backend state transitions shall be validated atomically where needed; repeated event submissions shall be handled idempotently when a stable event identity is available. | Must | Domain and integration tests | Draft |
+| NFR-010 | Reliability and failure isolation | Video processing, backend persistence, evidence storage, and notification simulation failures shall be distinguishable and shall not silently create a verified incident. Recovery semantics are TBD. | Must | Fault-injection scenarios and design review | Draft |
+| NFR-011 | Availability | Prototype availability and recovery-time objectives are TBD and require an agreed operating environment; no service-level commitment is claimed. | TBD | Environment-specific measurement after targets are approved | Open |
+| NFR-012 | Performance | Processing latency, API response time, throughput, and resource ceilings are TBD pending representative data and environment selection. | TBD | Benchmark plan after targets and hardware are approved | Open |
+| NFR-013 | Scalability | Expected video sources, concurrent users, event rates, and media volume are TBD; architecture should keep processing, API, database, and media boundaries separable. | Should | Architecture review and later load tests | Draft |
+| NFR-014 | Maintainability | Requirements, workflows, service responsibilities, and decisions shall use consistent terminology and traceable identifiers; implementation modules shall remain separable. | Should | Documentation and architecture review | Draft |
+| NFR-015 | Observability | Future services shall expose privacy-conscious operational logs and health/failure signals sufficient to distinguish processing, persistence, storage, and notification-simulation outcomes. Tooling and retention are TBD. | Should | Design review and later operational checks | Draft |
+| NFR-016 | Usability and accessibility | Role workflows shall provide clear loading, empty, error, success, and uncertain-detection states; supported accessibility criteria and localization are TBD. | Should | Usability review and client tests | Draft |
+| NFR-017 | Compatibility | Supported mobile OS, browser/admin environment, Python, PostgreSQL, model runtime, and dependency versions shall be documented before implementation. | TBD | Compatibility matrix review | Open |
+| NFR-018 | Recoverability | Backup, restore, media lifecycle, and recovery procedures shall be designed before any deployment with retained data. Recovery objectives are TBD. | Should | Restore exercise after environment approval | Draft |
+| NFR-019 | AI quality evaluation | Candidate/verification behavior shall be evaluated on approved, labeled data using documented measures for false positives, false negatives, and limitations; no accuracy target is approved. | Must | Evaluation protocol and reproducible report | Draft |
+| NFR-020 | Safety | Prototype notification and response behavior shall remain simulated and shall not trigger emergency dispatch or imply operational readiness. | Must | Configuration review and end-to-end safety scenario | Draft |
