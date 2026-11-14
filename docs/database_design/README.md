@@ -1,12 +1,19 @@
-# Database Design
+# PostgreSQL Database Design
 
-**Status:** REVISED_DRAFT — pending team approval for logical relationships.
+**Status:** PHASE_2_DESIGN_DRAFT — implementation-ready proposal for team review. It does not create or claim database tables, Django models, or migrations.
 
-PostgreSQL is planned for structured records and evidence metadata.
+PostgreSQL is the authoritative store for structured application data. Object storage holds evidence bytes; Django owns persistence and authorization. The AI service submits observations but cannot verify candidates, create incidents, or change response state. Police and Hospital assignments have independent lifecycles.
 
-## Index
+## Design Documents
 
-- [Conceptual relationship design](erd.md): REVISED_DRAFT relationships, responsibilities, lifecycle and ownership.
-- [Data dictionary](data_dictionary.md): deferred physical-field template; no field types are approved.
+- [ERD](erd.md) — entities, relationships, cardinality, and MVP/future evaluation.
+- [Data dictionary](data_dictionary.md) — proposed field-level types, nullability, defaults, keys, indexes, validation, and sensitivity.
+- [Schema specification](database_schema_specification.md) — ownership, primary-key/auth decisions, table inventory, and conventions.
+- [Constraints and indexes](constraints_and_indexes.md) — proposed foreign keys, unique/check constraints, and query indexes.
+- [Lifecycle and retention](data_lifecycle_and_retention.md) — soft deletion, media cleanup, audit preservation, and policy-dependent durations.
+- [Transaction and integrity design](transaction_and_integrity_design.md) — atomic boundaries, retries, idempotency, concurrency, and storage reconciliation.
+- [Implementation plan](database_implementation_plan.md) — decisions and migration sequence for the later Django implementation phase.
 
-The conceptual design separates events, candidates, incidents, assignments, responses, evidence, locations, and audit. No physical schema, tables, migrations, or final data model have been approved or implemented. Do not treat conceptual relationships as an approved schema.
+## Status and Scope
+
+All details are proposed design, not deployed behavior. Retention durations, legal-hold handling, exact PostgreSQL/Django versions, object-storage provider, reviewer authority, assignment authority, and timeout policy remain subject to the approvals listed in the documents. Phase 2 introduces documentation only: no Django initialization, model code, migrations, credentials, or database objects are part of this design.

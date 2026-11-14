@@ -1,0 +1,73 @@
+# Transaction and Integrity Design
+
+**Status:** PHASE_2_DESIGN_DRAFT — proposed Django/PostgreSQL transaction contract. No transaction service or database operation has been implemented.
+
+All authoritative writes are made by Django in PostgreSQL transactions. State, its transition history, and the corresponding successful business audit event commit together. A failed transaction leaves none of those authoritative changes committed. Authorization denials are recorded in a separate safe audit operation after the failed business transaction so rollback cannot erase the denial record. Never include passwords, tokens, raw media, signed URLs, or unrestricted request bodies in audit context.
+
+Unauthenticated authentication attempts may use `actor_kind=ANONYMOUS` and a request ID for correlation; do not retain the submitted email or other raw identity string in the audit snapshot.
+
+## Transaction Boundaries
+
+| Scenario | One PostgreSQL transaction | Idempotency, concurrency, and failure behavior |
+|---|---|---|
+| DetectionEvent ingestion | Authenticate AI_SERVICE; lock/check the VideoSource authorization row; insert accepted event; bind the request's explicitly identified, previously unattached EvidenceAssets to that event; create/lock the candidate as applicable; insert CandidateDetectionEvent and candidate EvidenceAssociations; set candidate to `RECEIVED` or `UNDER_REVIEW` only when required provenance/evidence is present and validated; append audit rows. | Unique `(video_source_id, external_event_id)` is the race-safe identity. A retry with the same canonical payload and asset IDs returns the existing event; the same ID with a different payload/reference set is an idempotency conflict and never overwrites the event. Source revocation and ingestion serialize on the source row. |
+| Duplicate event handling | On uniqueness conflict, read the existing row and compare the canonical payload digest. Do not create a second event, candidate association, or evidence link. | Concurrent requests are resolved by the unique index. A matching retry returns the stored outcome; a mismatched retry is rejected and safely audited. Rejected/no-observation/failed processing does not create a DetectionEvent row. |
+| Candidate creation/association | Persist event, candidate, event association, any candidate evidence links, current candidate state, and audit as one unit. Lock the candidate when adding an event or placing it in review. Require at least one associated event before review. An uploaded asset may exist before the event is accepted; only its authenticated creator may bind it once to an accepted event. | `CandidateDetectionEvent.detection_event_id` is unique, so an event cannot be claimed by two candidates. Similarity grouping is a separate approved policy; uncertain matches remain separate or are routed for human review, never silently merged. |
+| Candidate verification/rejection | Lock candidate; check `UNDER_REVIEW` and reviewer authorization; insert one CandidateReview; update candidate status; on verification insert one OPEN incident, initial incident history, and audit; on rejection create no incident. | Unique candidate review, unique incident candidate, and unique command ID protect retries/races. Same command and payload returns the existing decision; conflicting command payload or a second final decision is rejected. Candidate lock serializes concurrent reviewers. |
+| Incident assignment creation | Lock incident, check it is not RESOLVED/CLOSED, validate active target organization and Police/Hospital kind, insert assignment in `PENDING`, initial AssignmentStatusHistory, and audit. | `creation_command_id` deduplicates retries. A partial unique constraint allows one nonterminal assignment per incident/target. A repeated request for that target returns the existing active assignment or a conflict; reassignment requires cancelling the old assignment and creating a linked new row. |
+| Assignment acknowledgement | Lock incident, then assignment; verify the current state and that the human has an active membership for this exact target; update status, append AssignmentStatusHistory, and audit. | Assignment row lock serializes acknowledgements. A unique history command ID makes retry safe. Notification delivery/read does not satisfy this operation. |
+| Response activity/status update | Lock incident, then assignment; authorize the assigned target user; validate a legal transition; insert Response activity and update assignment/history/audit in the same transaction. | `Response.command_id` makes activity creation idempotent; history command ID makes state transition idempotent. Hospital activity remains simulated readiness and Police activity remains simulated; neither stores treatment or dispatch outcome. |
+| Incident `RESPONSE_ACTIVE` update | When an assignment first enters `IN_PROGRESS`, update an OPEN incident to `RESPONSE_ACTIVE`, with IncidentStatusHistory and audit in the same transaction as assignment status/history. | If already RESPONSE_ACTIVE, do not add a duplicate transition. Lock incident before assignment to serialize concurrent agency starts. An assignment acknowledgement alone does not activate the incident. |
+| Incident resolution | Lock incident, then all its assignments in stable ID order; validate the authorized resolver, current incident state, and the proposed rule that all assignments are terminal (unless a separately approved override is recorded); update incident/history/audit. | Assignment creation also locks the incident first, preventing an assignment from appearing during resolution. `EXPIRED` counts terminal only if timeout policy is approved and the transition exists. Do not infer resolution from notification delivery or a single agency's completion. |
+| Incident closure | Lock incident; require `RESOLVED`, authorized closure actor, and non-blank closure reason; update to `CLOSED`, append history/audit. | History command ID prevents retry duplication. Reopen is denied in MVP unless a separately approved transition and schema policy is added. |
+| Evidence upload completion | Object upload/checksum/scanning occur outside PostgreSQL. In short DB transactions create the asset/session and scoped authorization; after object verification, lock rows and mark session complete and asset `AVAILABLE` only when size, media type, checksum, validation time, and required scan all pass. | Use immutable server-generated object keys and stable asset/session IDs. If storage succeeds but the DB completion write fails, retry by inspecting the same object and session; never issue a second unrestricted grant. If the DB records a session but upload fails, retain a safe FAILED/EXPIRED result for reconciliation. |
+| Evidence retrieval/access | Check current human/service identity, role, organization/assignment scope, asset `AVAILABLE` state, and object-level permission. Record a safe `EVIDENCE_ACCESS_GRANTED` or `EVIDENCE_ACCESS_DENIED` AuditEvent with actor, asset UUID, outcome, request ID, and timestamp; then retrieve through the backend or issue a short-lived object-scoped grant. | Never expose or persist a public URL, credential, or signed URL. Denials reveal no existence details to the caller. A storage failure after authorization is recorded as a separate safe failure; it does not change incident/assignment state. |
+| Evidence deletion | First DB transaction changes asset to `EXPIRED` and records request/audit, immediately disabling retrieval. Delete from object storage after commit. A second transaction marks `DELETED` after absence is confirmed and records completion. | No cross-system atomicity is assumed. Repeated deletion is safe; transient failure leaves EXPIRED with `deleted_at=NULL` for retry. See [lifecycle and retention](data_lifecycle_and_retention.md). |
+| Notification creation and simulated delivery | Insert Notification with exactly one incident or assignment target and an authorized recipient, using `creation_command_id`; append audit in the same transaction. For each simulated delivery attempt, lock the Notification, allocate the next `attempt_number`, insert the attempt, update Notification.status, and append audit in one transaction. | A retry returns the original notification. Attempt numbering is serialized by the row lock and uniqueness by `(notification_id, attempt_number)` protects it. Failure never rolls back or mutates incident/assignment state. No live provider dispatch is in scope. |
+
+## State Ownership and Legal Transitions
+
+- **Candidate:** `RECEIVED -> UNDER_REVIEW -> VERIFIED | REJECTED`. VERIFIED/REJECTED are final in the MVP. Only an authorized human supplies the decision; the backend writes it. `CandidateReview` stores the final decision and Candidate.status is its queryable current state.
+- **Incident:** initial `OPEN`; `OPEN -> RESPONSE_ACTIVE` when an assignment first enters `IN_PROGRESS`; `OPEN | RESPONSE_ACTIVE -> RESOLVED` through authorized incident resolution; `RESOLVED -> CLOSED` through authorized closure. No reopening is allowed by the current proposal.
+- **Assignment:** initial `PENDING`; `PENDING -> ACKNOWLEDGED | UNABLE_TO_RESPOND | CANCELLED`; `ACKNOWLEDGED -> IN_PROGRESS | COMPLETED | UNABLE_TO_RESPOND | CANCELLED`; `IN_PROGRESS -> COMPLETED | UNABLE_TO_RESPOND | CANCELLED`. `PENDING -> EXPIRED` only after timeout policy approval. Terminal assignments are not edited; reassignment inserts a new row linked by `replacement_for_id`.
+- **EvidenceAsset:** `PENDING_UPLOAD -> UPLOADING -> QUARANTINED -> AVAILABLE`; validation/upload may move to FAILED; an approved retry starts a new upload session; retention/deletion changes the asset to EXPIRED then DELETED. Only AVAILABLE is retrievable.
+- **Notification:** delivery/read lifecycle is independent. `CREATED` may be queued as `PENDING`; attempts may yield `DELIVERED_SIMULATED` or `FAILED`; an authorized recipient may mark a delivered notification `READ`; cancellation is terminal. A retry may move FAILED back to PENDING while preserving all prior attempts.
+
+Database CHECK constraints enforce state vocabulary and row-local facts, not transition legality. Django domain services enforce the transition graph and actor/scope rules. Append-only history records are inserted with the current-state change; do not reconstruct history from `updated_at`.
+
+## Required Audit Events
+
+`AuditEvent.action` is a bounded, backend-allow-listed event code. At minimum, record:
+
+- Human and machine authentication success/failure and authorization denial.
+- User activation/deactivation, group/role changes, membership grant/suspend/revoke, and administrator overrides.
+- VideoSource authorization/suspension/revocation and policy/configuration reference changes.
+- DetectionEvent accepted/duplicate-safe/rejected outcomes, including idempotency conflicts without raw payloads.
+- Candidate queueing, human verification/rejection, incident creation, incident resolution/closure, and rejected invalid transitions.
+- ResponseAssignment creation, acknowledgement, progress, completion, inability, cancellation, reassignment, and any approved expiry.
+- Evidence upload authorization/completion/failure/validation, scoped access grant/denial, retention expiry, deletion request, and confirmed deletion.
+- Location verification/correction, Notification creation, simulated delivery attempt/result, and access to sensitive history where the authorization policy requires it.
+
+Each audit row carries actor kind/reference, action, resource type/UUID where known, outcome, UTC timestamp, and request correlation. `safe_context` is allow-listed and versioned. Never copy media, credentials, bearer tokens, raw request bodies, signed URLs, or unnecessary personal data into the audit ledger.
+
+## Isolation, Locking, and Idempotency
+
+- PostgreSQL's ordinary `READ COMMITTED` isolation plus targeted row locks and unique constraints is the MVP recommendation. Do not use global SERIALIZABLE isolation without a measured requirement and retry design.
+- Use `transaction.atomic()` for every boundary above. Lock rows with `select_for_update()` only for the short decision/write path; do not hold a DB transaction open while uploading, scanning, deleting, or calling a provider.
+- Use a consistent lock order for operations spanning aggregates: **incident, assignment rows in stable primary-key order**. Candidate verification locks candidate before inserting the incident; source ingestion locks source before candidate association. Keep external operations outside locks.
+- Unique constraints are the final race protection; application pre-checks alone are insufficient. Handle uniqueness/serialization failures by rolling back and rereading only when the request's idempotency key and payload match.
+- Use client command UUIDs for CandidateReview, incident/assignment history transitions, assignment creation, Response activity, and notification creation. Event idempotency uses `(source_id, external_event_id)`. Storage idempotency uses the immutable EvidenceAsset/session/object identity.
+- If future asynchronous provider delivery is selected, add a reviewed transactional outbox/integration design before implementation. MVP simulated notifications do not require a new outbox table.
+
+## Integrity Rules Beyond a Single Row
+
+The application/domain transaction must enforce: source authorization at event intake; candidate has event provenance before review; event belongs to at most one candidate; reviewer authority; candidate VERIFIED before incident creation; target organization active and of eligible kind; same incident for reassignment; terminal-assignment guard for resolution; incident open for new assignment/activity; evidence validation before availability; object-level media access; and consistent actor/group/organization relationships. Constraints and indexes provide the relational backstop documented in [constraints and indexes](constraints_and_indexes.md).
+
+## Operational Recovery
+
+- Retain safe request/command IDs in audit context to trace failed and retried operations; never store bearer credentials.
+- On storage uncertainty, keep the asset inaccessible (`QUARANTINED` or `EXPIRED`) until reconciliation succeeds.
+- Reconcile object storage and PostgreSQL after interrupted upload/deletion and after database restore. Do not delete an object based solely on a stale client request.
+- Report transaction conflicts as safe retryable errors. Do not report acceptance until the authoritative commit succeeds.
+- Test these rules in the later implementation phase with concurrent retries and injected PostgreSQL/object-storage failures; no such tests are claimed in Phase 2.
+
