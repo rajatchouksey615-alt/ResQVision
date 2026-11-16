@@ -1,6 +1,6 @@
 # Documentation
 
-This directory contains the Phase 1 revised documentation draft pending team approval, Phase 2B database design/implementation records, working conventions, and academic project notes for ResQVision. Documentation distinguishes implemented persistence foundations from unimplemented workflows and integrations.
+This directory contains the Phase 1 revised documentation draft pending team approval, Phase 2B database design/implementation records, Phase 3 domain-service implementation notes, working conventions, and academic project notes for ResQVision. Documentation distinguishes implemented internal workflows from unimplemented APIs and external integrations.
 
 ## Index
 

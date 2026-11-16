@@ -1,6 +1,6 @@
 # End-to-End System Workflow
 
-**Status:** REVISED_DRAFT — pending team approval; source interfaces and service contracts are not implemented.
+**Status:** REVISED_DRAFT — pending team approval; internal domain services implement selected workflows, while source/provider integration interfaces and HTTP contracts are not implemented.
 
 ~~~mermaid
 flowchart TD

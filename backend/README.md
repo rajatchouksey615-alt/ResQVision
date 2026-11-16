@@ -1,6 +1,6 @@
 # ResQVision Backend
 
-**Status:** The Django configuration and PostgreSQL database foundation are implemented. The backend currently provides domain persistence and schema validation; it is not yet an application API or an operational response service.
+**Status:** The Django configuration, PostgreSQL database foundation, and internal domain service layer are implemented. The backend is not yet an HTTP API or an operational response service.
 
 ## Django Project Configuration
 
@@ -27,6 +27,22 @@ The ten Django applications each own a persistence domain:
 The custom `accounts.User` uses a UUID primary key, normalized unique email as its login identifier, and Django's password hashing. ResQVision-owned domain records use UUID keys. Django's built-in Group and Permission tables keep their migration-defined integer keys.
 
 Each application has tracked migrations under `apps/<app>/migrations/`. They define the database tables, foreign keys, checks, unique constraints, and query indexes. Apply them to the configured local database with `manage.py migrate`. The [database design documents](../docs/database_design/README.md) contain the ERD, field dictionary, constraints, lifecycle decisions, and transaction boundaries.
+
+## Internal Domain Services
+
+Services live under each owning app's `services/` package and accept typed actor and command inputs. They enforce state transitions, transaction boundaries, idempotency, and audit behavior without depending on HTTP request objects:
+
+- `common/domain/`: human and machine actor contexts, domain exceptions, typed command results, and deny-by-default policy interfaces.
+- `audit/services/`: allow-listed audit events with safe context and actor snapshots.
+- `detection/services/`: provenance validation, authorized-source event ingestion, semantic replay handling, and object-scoped reads.
+- `incidents/services/`: candidate/event association, review workflow, atomic verified incident creation, and incident lifecycle transitions.
+- `organizations/services/` and `sources/services/`: membership lifecycle and video-source registration/authorization operations.
+- `responses/services/`: independent agency assignments, acknowledgement, response activity, cancellation, reassignment, resolution, and closure policy hooks.
+- `evidence/services/`: upload-session and evidence metadata lifecycle, access checks, and staged deletion without a storage provider.
+- `locations/services/`: provenance-aware location claims, verification, correction history, and current-claim reads.
+- `notifications/services/`: simulated notification creation, delivery attempts, recipient reads, and cancellation.
+
+Unresolved authority decisions fail closed through `PolicyNotConfigured`; tests inject narrowly scoped policies. This includes candidate verify/reject, source register/authorize, assignment, incident resolve/close, and administrator override authority. No role is silently granted these powers.
 
 ## Dependencies
 
@@ -61,10 +77,13 @@ With the local PostgreSQL database available, run schema and test checks from `b
 .\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
 .\.venv\Scripts\python.exe manage.py showmigrations
 .\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\ruff.exe check .
+.\.venv\Scripts\ruff.exe format --check .
+.\.venv\Scripts\python.exe -m pip check
 ```
 
-`pytest.ini` selects `config.settings.test`. Tests use PostgreSQL and a separate test database; the test-only password hasher and secret are not deployment settings.
+`pytest.ini` selects `config.settings.test`. Tests use PostgreSQL and a separate test database; the current suite passes 67 tests, including service integration, rollback, idempotency, and concurrency coverage. The test-only password hasher and secret are not deployment settings.
 
 ## Implementation Boundaries
 
-The current database foundation includes the custom account schema, role groups, memberships, and domain records. Django admin is available, but REST login/token workflows, mobile authentication, and application-level role/organization authorization flows are not implemented. API endpoints and cross-row domain services—including candidate verification, incident creation, and response state transitions—remain future work. AI-service and mobile integrations, object-storage operations, and production deployment are also unimplemented. Notifications and Police/Hospital response records remain simulated; no real emergency integration is configured.
+Django admin is available. REST endpoints, JWT/login/token workflows, mobile authentication, and client-facing serializers are not implemented. Domain services provide internal business operations, but authority remains policy-injected where project decisions are open. AI processing, mobile integrations, actual object-storage operations, external notification delivery, and production deployment are also unimplemented. Notifications and Police/Hospital response records remain simulated; no real emergency integration is configured.

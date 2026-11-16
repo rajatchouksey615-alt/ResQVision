@@ -1,6 +1,6 @@
 # Component Architecture
 
-**Status:** REVISED_DRAFT — pending team approval; no application services are implemented.
+**Status:** REVISED_DRAFT — pending team approval; Phase 3 internal Django domain services are implemented, while API and external integration layers are not.
 
 ## Component Relationship
 

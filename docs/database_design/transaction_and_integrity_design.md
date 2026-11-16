@@ -1,6 +1,6 @@
 # Transaction and Integrity Design
 
-**Status:** Phase 2B transaction and integrity contract for the implemented Django/PostgreSQL schema. Cross-row state-transition services and object-storage workflows remain Phase 3 work; database model migrations alone do not implement these transactions.
+**Status:** The Django/PostgreSQL schema and Phase 3 internal state-transition services are implemented. Object-storage workflows remain future adapter work; model migrations alone do not implement cross-row transactions.
 
 All authoritative writes are made by Django in PostgreSQL transactions. State, its transition history, and the corresponding successful business audit event commit together. A failed transaction leaves none of those authoritative changes committed. Authorization denials are recorded in a separate safe audit operation after the failed business transaction so rollback cannot erase the denial record. Never include passwords, tokens, raw media, signed URLs, or unrestricted request bodies in audit context.
 
@@ -69,5 +69,5 @@ The application/domain transaction must enforce: source authorization at event i
 - On storage uncertainty, keep the asset inaccessible (`QUARANTINED` or `EXPIRED`) until reconciliation succeeds.
 - Reconcile object storage and PostgreSQL after interrupted upload/deletion and after database restore. Do not delete an object based solely on a stale client request.
 - Report transaction conflicts as safe retryable errors. Do not report acceptance until the authoritative commit succeeds.
-- Test these rules in the later implementation phase with concurrent retries and injected PostgreSQL/object-storage failures; no such tests are claimed in Phase 2.
+- PostgreSQL service tests cover rollback, idempotency, authorization, and concurrent candidate verification. Injected object-storage failure tests remain future work because no storage adapter exists.
 

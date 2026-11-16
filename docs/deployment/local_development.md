@@ -1,6 +1,6 @@
 # Local Development Guide
 
-**Status:** Local PostgreSQL/Django foundation is runnable. Application APIs and other service modules are not implemented.
+**Status:** The local PostgreSQL/Django foundation and internal domain service modules are runnable. Application APIs and external integrations are not implemented.
 
 ## Planned Local Services
 

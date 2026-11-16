@@ -127,6 +127,7 @@ class NotificationDeliveryAttempt(AppendOnlyUUIDModel):
         related_name="delivery_attempts",
     )
     attempt_number = models.PositiveIntegerField()
+    command_id = models.UUIDField(null=True, blank=True)
     outcome = models.CharField(max_length=24, choices=DeliveryOutcome.choices)
     attempted_at = models.DateTimeField(default=timezone.now)
     safe_failure_code = models.CharField(max_length=64, null=True, blank=True)
@@ -138,6 +139,11 @@ class NotificationDeliveryAttempt(AppendOnlyUUIDModel):
             models.UniqueConstraint(
                 fields=["notification", "attempt_number"],
                 name="uq_delivery_attempt_number",
+            ),
+            models.UniqueConstraint(
+                fields=["command_id"],
+                condition=Q(command_id__isnull=False),
+                name="uq_delivery_attempt_command",
             ),
             models.CheckConstraint(
                 condition=Q(attempt_number__gt=0),
