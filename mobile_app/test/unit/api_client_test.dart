@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:resqvision_mobile/core/config/app_config.dart';
@@ -8,6 +10,62 @@ import 'package:resqvision_mobile/core/networking/api_request.dart';
 import 'package:resqvision_mobile/core/networking/api_transport.dart';
 
 void main() {
+  test(
+    'sends JSON with an explicit content length over the real HTTP transport',
+    () async {
+      final HttpServer server = await HttpServer.bind(
+        InternetAddress.loopbackIPv4,
+        0,
+      );
+      final Completer<Map<String, Object?>> received =
+          Completer<Map<String, Object?>>();
+      server.listen((HttpRequest request) async {
+        final String body = await utf8.decoder.bind(request).join();
+        if (!received.isCompleted) {
+          received.complete(<String, Object?>{
+            'transferEncoding': request.headers.value(
+              HttpHeaders.transferEncodingHeader,
+            ),
+            'contentLength': request.contentLength,
+            'body': body,
+          });
+        }
+        request.response.statusCode = HttpStatus.noContent;
+        await request.response.close();
+      });
+      final ApiClient client = ApiClient(
+        config: AppConfig.fromValues(
+          apiBaseUrl: 'http://127.0.0.1:${server.port}/api/v1/',
+          environment: 'test',
+        ),
+      );
+
+      try {
+        final ApiResponse response = await client.request(
+          'POST',
+          'auth/token/',
+          jsonBody: <String, Object?>{
+            'email': 'reviewer@example.test',
+            'password': 'secret',
+          },
+        );
+        final Map<String, Object?> request = await received.future;
+        final String expectedBody = jsonEncode(<String, Object?>{
+          'email': 'reviewer@example.test',
+          'password': 'secret',
+        });
+
+        expect(response.statusCode, HttpStatus.noContent);
+        expect(request['transferEncoding'], isNull);
+        expect(request['contentLength'], utf8.encode(expectedBody).length);
+        expect(request['body'], expectedBody);
+      } finally {
+        client.close();
+        await server.close(force: true);
+      }
+    },
+  );
+
   test('resolves API paths and prepares JSON requests centrally', () async {
     final _RecordingTransport transport = _RecordingTransport();
     final ApiClient client = ApiClient(

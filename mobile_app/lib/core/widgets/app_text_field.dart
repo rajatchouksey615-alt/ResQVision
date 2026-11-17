@@ -11,6 +11,12 @@ class AppTextField extends StatelessWidget {
     this.obscureText = false,
     this.validator,
     this.onChanged,
+    this.textInputAction,
+    this.enabled = true,
+    this.autofillHints,
+    this.autocorrect = true,
+    this.suffixIcon,
+    this.onFieldSubmitted,
   });
 
   final String label;
@@ -21,6 +27,12 @@ class AppTextField extends StatelessWidget {
   final bool obscureText;
   final String? Function(String?)? validator;
   final ValueChanged<String>? onChanged;
+  final TextInputAction? textInputAction;
+  final bool enabled;
+  final Iterable<String>? autofillHints;
+  final bool autocorrect;
+  final Widget? suffixIcon;
+  final ValueChanged<String>? onFieldSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +43,16 @@ class AppTextField extends StatelessWidget {
       obscureText: obscureText,
       validator: validator,
       onChanged: onChanged,
-      decoration: InputDecoration(labelText: label, hintText: hintText),
+      textInputAction: textInputAction,
+      enabled: enabled,
+      autofillHints: autofillHints,
+      autocorrect: autocorrect,
+      onFieldSubmitted: onFieldSubmitted,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hintText,
+        suffixIcon: suffixIcon,
+      ),
     );
   }
 }

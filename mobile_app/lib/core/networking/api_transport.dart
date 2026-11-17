@@ -34,8 +34,10 @@ class IoApiTransport implements ApiTransport {
       outgoing.headers.set(header.key, header.value);
     }
     if (request.jsonBody != null) {
+      final List<int> body = utf8.encode(jsonEncode(request.jsonBody));
       outgoing.headers.contentType = ContentType.json;
-      outgoing.write(jsonEncode(request.jsonBody));
+      outgoing.contentLength = body.length;
+      outgoing.add(body);
     }
 
     final HttpClientResponse incoming = await outgoing.close().timeout(

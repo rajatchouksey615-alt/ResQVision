@@ -5,6 +5,7 @@ import '../theme/app_spacing.dart';
 
 abstract final class AppRoutes {
   static const String home = '/';
+  static const String login = '/login';
   static const String about = '/about';
 }
 
@@ -16,6 +17,7 @@ abstract final class AppRouter {
   }) {
     final Widget page = switch (settings.name) {
       AppRoutes.home => home,
+      AppRoutes.login => home,
       AppRoutes.about => about,
       _ => const UnknownRouteScreen(),
     };

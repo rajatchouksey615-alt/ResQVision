@@ -1,18 +1,20 @@
 # ResQVision Mobile
 
-**Status:** Phase 5A Flutter foundation implemented. Android is the primary target and Windows is supported for development. The earlier placeholder did not support Web, so this project does not create a Web target.
+**Status:** Phase 5B human authentication and secure session management are implemented on the Phase 5A foundation. Android is the primary target and Windows is supported for development. This project does not create a Web target.
 
 ## Foundation
 
 - Feature-first code under `lib/app`, `lib/core`, and `lib/features`.
 - Central bootstrap, light/dark Material 3 themes, named routes, and safe unknown-route handling.
 - Required compile-time API configuration with URL validation.
-- A shared HTTP client with timeouts and transport error mapping. It does not add authentication headers or make requests from the shell.
+- A shared HTTP client with timeouts, stable transport errors, and explicit JSON content lengths for Django compatibility.
+- Backend-integrated email login, secure Android/Windows token storage, refresh rotation, and session restoration.
+- Authenticated requests with single-flight refresh, a single retry for safe reads, and backend profile-driven workspace placeholders.
 - Shared loading, empty, and error states; buttons, a text-field foundation, cards, headings, and a confirmation dialog.
 - Structured development logging that records event identifiers and exception types without exception messages or stack traces.
 - Deterministic unit and widget tests under `test/unit` and `test/widget`.
 
-The shell has no complex feature state, so no state-management dependency is selected. Navigation uses Flutter's built-in `Navigator`. The HTTP transport uses Dart's built-in `dart:io` library; a Web target would need a browser-compatible transport before it is enabled.
+Session state uses Flutter's `ChangeNotifier`; no general state-management dependency is selected. Navigation uses Flutter's built-in `Navigator`. The HTTP transport uses Dart's built-in `dart:io` library; a Web target would need a browser-compatible transport before it is enabled.
 
 ## Configure the API URL
 
@@ -44,8 +46,10 @@ flutter analyze
 flutter test
 ```
 
+`test/integration/live_backend_auth_test.dart` exercises login, profile retrieval, refresh rotation, restoration, logout, and revocation against a live Django server when `RESQVISION_TEST_API_BASE_URL`, `RESQVISION_TEST_EMAIL`, and `RESQVISION_TEST_PASSWORD` point to an isolated test account. It is skipped in the ordinary test run when these values are absent. The test never prints or persists the supplied password.
+
 ## Scope boundaries
 
-This phase does not implement login, token storage or refresh, role authorization, incident or assignment workflows, push notifications, maps, AI integration, emergency dispatch, or production deployment. The backend remains authoritative for identity and authorization. No real emergency service, police, hospital, or ambulance dispatch is connected.
+This phase implements human login and session handling only. Incident or assignment workflows, push notifications, maps, AI integration, emergency dispatch, and production deployment remain out of scope. The backend remains authoritative for identity and authorization. No real emergency service, police, hospital, or ambulance dispatch is connected.
 
-See [mobile architecture](docs/architecture.md), the [project testing strategy](../docs/testing/testing_strategy.md), and the [contribution guide](../CONTRIBUTING.md).
+See [mobile architecture](docs/architecture.md), the [authentication contract and lifecycle](docs/authentication.md), the [project testing strategy](../docs/testing/testing_strategy.md), and the [contribution guide](../CONTRIBUTING.md).

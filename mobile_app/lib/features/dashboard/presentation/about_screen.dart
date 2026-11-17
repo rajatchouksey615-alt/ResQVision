@@ -25,7 +25,7 @@ class AboutScreen extends StatelessWidget {
                     const SectionHeading(title: 'ResQVision'),
                     const SizedBox(height: AppSpacing.md),
                     Text(
-                      'ResQVision is an academic prototype for road accident detection and emergency response coordination. The mobile app is a foundation shell; authentication and incident workflows are outside this phase.',
+                      'ResQVision is an academic prototype for road accident detection and emergency response coordination. This phase adds secure account sign-in and session handling; incident workflows are planned for later phases.',
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                     const SizedBox(height: AppSpacing.md),
