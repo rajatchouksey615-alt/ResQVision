@@ -6,7 +6,7 @@
 
 ResQVision is an academic major project exploring how computer vision and coordinated software workflows could help identify potential road accidents from authorized CCTV or video sources. The planned system produces AI DetectionEvents, associates them with AccidentCandidates, creates authoritative AccidentIncidents only after human verification, and presents independently tracked Police and Hospital assignments to authorized users.
 
-The project is in **Phase 3: Domain Services and Business Logic**. Phase 1 requirements and architecture documents remain a **REVISED_DRAFT pending team approval**. The PostgreSQL-backed Django foundation and internal domain service layer are implemented and tested. HTTP APIs, mobile and AI services, object storage, and deployment integrations are not.
+The project is in **Phase 4: Authentication, Authorization and REST API Layer**. Phase 1 requirements and architecture documents remain a **REVISED_DRAFT pending team approval**. The PostgreSQL-backed Django foundation, domain services, and a versioned human-authenticated API are implemented. Mobile and AI services, approved machine authentication, object storage, and deployment integrations are not configured.
 
 ## Problem Statement
 
@@ -36,7 +36,7 @@ The user-facing applications and external integrations remain planned. Backend d
 The planned system has four main parts:
 
 - **Mobile app:** Flutter and Dart interfaces for Admin, Police, and Hospital users. It will communicate with the backend API and will not access the database directly.
-- **Backend:** Python, Django, Django REST Framework, and PostgreSQL. The database foundation and internal domain services are implemented; API endpoints, authentication flows, and external notification delivery remain future work.
+- **Backend:** Python, Django, Django REST Framework, and PostgreSQL. Database/domain services and the `/api/v1/` transport layer are implemented. Human JWT is configured; operations with unresolved authority remain unavailable. AI machine authentication, external notification delivery, and storage integrations remain unconfigured.
 - **AI service:** Python, YOLO, OpenCV, PyTorch, and NumPy for authorized video processing, object detection/tracking, DetectionEvent generation, temporal analysis, and evidence generation. It cannot verify candidates or create incidents.
 - **Infrastructure and documentation:** A local PostgreSQL Compose definition and database implementation notes are present. No container or production deployment is running. Technical decisions and workflows are documented under docs.
 
@@ -50,7 +50,7 @@ The intended flow is authorized VideoSource input to AI DetectionEvents, backend
 | Backend | Python, Django, Django REST Framework |
 | Structured data | PostgreSQL |
 | Computer vision | YOLO, OpenCV, PyTorch, NumPy |
-| Application/service authentication | Human JWT planned; separate AI_SERVICE machine identity and scoped permissions required, mechanism TBD |
+| Application/service authentication | Human JWT implemented; AI_SERVICE remains separate and disabled pending OAD-017 |
 | Push notifications | Firebase Cloud Messaging planned; credentials and live delivery are not configured |
 | Maps | Provider pending selection |
 | Media storage | Object storage planned; provider pending selection |
@@ -67,7 +67,7 @@ Role permissions and workflows are in revised draft and pending team approval. P
 ## Repository Structure
 
 - mobile_app: Flutter application foundation, architecture notes, assets, and test placeholders.
-- backend: Django configuration, domain models, migrations, internal domain services, and PostgreSQL-backed tests; API implementation remains future work.
+- backend: Django configuration, domain models, migrations, internal domain services, versioned REST API, and PostgreSQL-backed tests.
 - ai_service: video analysis service foundation, source boundaries, model and dataset policies, and test placeholders.
 - infrastructure: future development and deployment configuration conventions.
 - docs: requirements, architecture, workflows, database, API, testing, security, deployment, decisions, and academic project documentation.
@@ -75,7 +75,7 @@ Role permissions and workflows are in revised draft and pending team approval. P
 
 ## Development Roadmap
 
-The project is phase-based and feature-driven, with test-driven development applied as executable features are added. Phase 0 established repository structure and standards; Phase 1 documents requirements and system design; Phase 2B established the database; Phase 3 now provides tested internal domain services. Next work can finalize authority decisions, then add reviewed API boundaries, client and AI integrations, evaluation, and deployment preparation.
+The project is phase-based and feature-driven, with test-driven development applied as executable features are added. Phase 0 established repository structure and standards; Phase 1 documents requirements and system design; Phase 2B established the database; Phase 3 provides internal domain services; Phase 4 adds authentication, scoped API reads, and approved response commands. Next work is to restore the configured PostgreSQL test connection, resolve outstanding authority decisions, and continue client and AI integrations in their later phases.
 
 ## Local Development Overview
 
@@ -96,7 +96,7 @@ ResQVision is an academic prototype. It must not send real emergency alerts to p
 
 ## Testing Strategy
 
-Use test-driven development for feature work. The backend currently has 67 PostgreSQL-backed tests covering persistence and domain service behavior, including a concurrent candidate verification test. API, mobile, AI, storage-adapter, and end-to-end integration tests remain future work.
+Use test-driven development for feature work. The backend includes 67 Phase 3 persistence/domain tests and 20 Phase 4 API security/integration cases. All 87 PostgreSQL-backed tests passed in the latest run. Mobile, AI, storage-adapter, and end-to-end integration tests remain future work.
 
 ## Team Information
 
@@ -104,11 +104,12 @@ ResQVision is an academic major project for a team of four. Team member names an
 
 ## Project Status
 
-- Current phase: **Phase 3 — Domain Services and Business Logic**
+- Current phase: **Phase 4 — Authentication, Authorization and REST API Layer**
 - Phase 1 specifications: **REVISED_DRAFT, pending team approval**
 - Database: local Django models and migrations applied to a dedicated PostgreSQL development database; no production database or service is configured.
 - Internal domain services: implemented with explicit fail-closed policy hooks for authority decisions that remain unresolved.
-- API, JWT flows, mobile app, and AI processing service: not implemented.
+- Human JWT and `/api/v1/` REST endpoints: implemented; see [API documentation](docs/api_documentation/README.md) for scoped and blocked operations.
+- AI machine authentication: disabled pending OAD-017. Mobile app and AI processing service: not implemented.
 - Emergency service integrations: disabled and out of scope without explicit authorization.
 - Map and object storage providers: pending selection.
 - License: pending team and institutional decision; see LICENSE_DECISION.md.

@@ -1,8 +1,10 @@
 # Testing Strategy
 
-**Status:** REVISED_DRAFT — pending team approval. No executable test suite or test results are claimed.
+**Status:** REVISED_DRAFT — pending team approval. The Phase 3 PostgreSQL suite and Phase 4 API integration tests are executable; the latest PostgreSQL-backed run passed all 87 tests.
 
 Use test-driven development for feature work: define expected behavior, write a focused failing test, implement the smallest change, and run relevant checks. Review tests and behavior together.
+
+The Phase 4 API tests cover email login, refresh rotation/blacklisting, logout ownership, password token revocation, actor separation, organization and assignment scope, fail-closed operations, notification ownership, pagination/filter limits, request IDs, body size, and throttling. See [API test results](../api_documentation/api_testing_results.md) for the latest database availability and check results.
 
 ## Test Levels
 

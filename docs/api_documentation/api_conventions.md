@@ -1,22 +1,17 @@
 # REST API Conventions
 
-**Status:** REVISED_DRAFT — pending team approval; endpoint contracts are not implemented.
+**Status:** Implemented for the current `/api/v1/` prototype contract. Role and authority documents remain revised drafts; operations depending on unresolved decisions stay unavailable.
 
-- Use nouns for resource paths and plural resource names where appropriate.
-- Use HTTP methods according to their intended semantics and return suitable status codes.
-- Validate all input at the boundary; use consistent machine-readable errors.
-- Require authentication and enforce authorization for protected operations.
-- Separate human-user JWT authentication from the AI_SERVICE machine identity. Machine permissions must be narrowly scoped; AI_SERVICE cannot verify candidates, create incidents, assign targets, or update response state.
-- Enforce object-level authorization for candidate, incident, ResponseAssignment, EvidenceAsset, and LocationProvenance operations. A role alone does not grant access to all objects.
-- Use stable DetectionEvent identity and idempotent retry semantics for event intake; candidate grouping/deduplication is separate from event identity.
-- Authorize evidence transfer through a backend-issued, short-lived, single-object, operation-scoped mechanism where supported; backend-mediated upload is a fallback. Never issue broad storage credentials or accept arbitrary user object paths.
-- Treat evidence availability, incident state, assignment state, and notification delivery state as separate domains.
-- Use pagination for potentially large collections and document filtering and ordering.
-- Use ISO 8601 timestamps with explicit time-zone handling.
-- Avoid returning secrets, internal stack traces, or unnecessary sensitive data.
-- Document idempotency and retry behavior for operations that may be repeated.
-- Audit candidate decisions, incident creation, each independent assignment/response transition, evidence upload/retrieval/deletion, location correction, and administrative overrides. Do not include secrets or raw media.
-- Return safe authorization failures that do not reveal whether out-of-scope evidence or incidents exist.
-- Version public API paths deliberately; see api_versioning.md.
+- Use plural resource paths and explicit HTTP methods. Lifecycle changes use named `POST` commands; clients cannot patch status fields.
+- Validate request data at the DRF boundary. Serializers expose only explicit fields; sensitive models never use `fields = "__all__"`.
+- Human API requests use `Authorization: Bearer <access_token>`. The AI_SERVICE endpoint uses a separate authenticator interface and accepts no caller-supplied identity claim.
+- Apply authorization before pagination and serialization. Incident and assignment reads are limited to active matching organization memberships. A role or Django superuser flag does not bypass object scope.
+- Candidate, source administration, incident resolution/closure, cancellation/reassignment, evidence, and location operations remain unavailable until the relevant policy or provider is approved.
+- Domain writes call the existing owning service. Command endpoints accept a UUID `command_id`; a repeated command with the same intent replays safely, while conflicting intent returns `409`.
+- Collections use limit/offset pagination, default `25`, maximum `100`. Only documented `status` filters are accepted; arbitrary ORM filters and ordering are not exposed.
+- Timestamps use timezone-aware ISO 8601 JSON values. The backend stores and operates in UTC.
+- Error bodies use a stable code, safe detail, optional field errors, and request ID. Inaccessible objects are filtered before retrieval where scope is defined.
+- Request bodies are limited to 1 MiB. Login and token refresh have dedicated DRF throttles; production deployment must also configure reverse-proxy rate limiting.
+- Domain services retain audit behavior for state-changing commands. Passwords and tokens are never placed in audit contexts or URLs.
 
-Endpoint names, event schemas, upload/completion/retrieval contracts, idempotency keys, object-level policies, and error schemas must be agreed with affected module owners before implementation. These conventions describe capabilities only and do not define an endpoint or wire shape.
+See the [endpoint reference](endpoint_reference.md) for the exact current wire contract and intentionally unavailable routes.

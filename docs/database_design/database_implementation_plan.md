@@ -37,7 +37,7 @@ Migration SQL was inspected with `sqlmigrate` before application. Named checks a
 
 - PostgreSQL database `resqvision_dev` and role `resqvision_app` are isolated on loopback port `5433`; local credentials live only in the ignored root `.env` and local cluster files.
 - `infrastructure/docker/compose.database.yml` defines the optional local PostgreSQL container. Docker Engine was unavailable during this implementation, so the Compose service was not started; the isolated local PostgreSQL 18.7 cluster was used instead.
-- The PostgreSQL-backed test suite creates a separate test database and currently passes **67 tests**, covering model constraints, service behavior, rollback, idempotency, authorization, and a real PostgreSQL candidate-verification race.
+- The PostgreSQL-backed test suite creates a separate test database and currently passes **87 tests**: 67 Phase 3 persistence/domain tests and 20 Phase 4 API security/integration cases. Coverage includes model constraints, service behavior, rollback, idempotency, authorization, API token lifecycle, scoped throttling, machine-auth boundaries, and a real PostgreSQL candidate-verification race.
 - `manage.py check` reported no issues; `makemigrations --check --dry-run` found no model drift; `pip check`, Ruff lint/format, and `git diff --check` passed. The Compose file was parsed but not started because Docker Engine was unavailable.
 
 Use a private local `.env`, never production/shared credentials. Do not add actual video, image, camera, storage, emergency-response, or user secrets to Git.

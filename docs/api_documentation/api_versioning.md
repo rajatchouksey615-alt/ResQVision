@@ -1,7 +1,7 @@
 # API Versioning Policy
 
-**Status:** Proposed policy; no API is implemented.
+The initial API uses the explicit `/api/v1/` prefix from its first release. URL routing is centralized in `backend/api/v1/urls.py` and mounted once by `backend/config/urls.py`.
 
-Use an explicit major version prefix such as /api/v1/ for the first backend API when it is designed. Keep compatible changes within a version and introduce a new major version for incompatible contract changes. Document migration, support, and retirement plans before removing a version.
+Additive compatible changes may remain in v1. Changes that alter existing field meaning, remove fields, or change authorization behavior require a reviewed new major version and a client migration plan. Do not remove a version until its clients and retirement date have been reviewed.
 
-The API owner and affected client owners should review contract changes. This policy does not define current endpoints.
+Phase 1 and role-policy documents remain revised drafts. This API contract does not approve the unresolved authority decisions listed in the [authorization contract](authorization_contract.md).

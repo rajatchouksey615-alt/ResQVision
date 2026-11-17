@@ -1,6 +1,6 @@
 # Requirements Traceability
 
-**Status:** REVISED_DRAFT — pending team approval. Phase 2B implements and tests the database persistence foundation only; end-to-end, API, authorization, and workflow acceptance tests remain future work.
+**Status:** REVISED_DRAFT — pending team approval. Phase 2B implements the database persistence foundation. Phase 4 adds human JWT, transport adapters, scoped approved reads/response commands, and fail-closed routes for unresolved authority. API tests are present but were not executed because the configured local PostgreSQL endpoint was unavailable; broader end-to-end and workflow acceptance remains future work.
 
 | Requirement ID | Requirement | Priority | Responsible component | Related workflow | Security implication | Acceptance criteria | Future implementation work | Planned test coverage | Status |
 |---|---|---|---|---|---|---|---|---|---|

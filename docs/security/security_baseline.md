@@ -1,13 +1,13 @@
 # Security Baseline
 
-**Status:** REVISED_DRAFT — pending team approval; controls have not been verified or deployed.
+**Status:** REVISED_DRAFT — pending team approval. Phase 4 implements local JWT/API controls and fail-closed authorization adapters; this is not a deployment or security audit.
 
 ## Identity and Access
 
-- Authenticate human users at the backend and authorize every protected operation by role and object scope. Client-side visibility is not an authorization control.
-- Use a separate, least-privilege AI_SERVICE identity for the AI service. Its planned capabilities are DetectionEvent submission and narrowly scoped evidence upload authorization/completion only.
+- Human API authentication uses database-backed JWTs and current database state. Protected incident/assignment reads are organization scoped; assignment response commands recheck membership in the domain service.
+- The AI_SERVICE identity remains separate from human accounts. Its DRF authenticator interface is present but unconfigured under OAD-017; detection submission returns unavailable until an approved mechanism exists.
 - Use framework-supported password hashing; never log or store plaintext passwords.
-- Define JWT issuance, expiry, refresh, revocation, logout, storage, and rotation before implementation.
+- Human JWT expiry, refresh rotation, blacklist logout, and password-change revocation are implemented locally. The client must keep tokens in secure platform storage in a later phase.
 - Define privileged account administration, access review, and recovery procedures before deployment.
 
 ## Data and Service Protection

@@ -1,13 +1,13 @@
 # ResQVision Backend
 
-**Status:** The Django configuration, PostgreSQL database foundation, and internal domain service layer are implemented. The backend is not yet an HTTP API or an operational response service.
+**Status:** The Django/PostgreSQL foundation, internal domain services, and versioned `/api/v1/` REST layer are implemented. The backend remains a non-operational academic prototype; unresolved authority and provider-dependent routes fail closed.
 
 ## Django Project Configuration
 
 - `manage.py` is the command-line entry point and defaults to `config.settings.development`.
 - `config/settings/base.py` contains shared Django, auth, UTC, and PostgreSQL settings. `config/settings/development.py` adds local-only development settings; `config/settings/test.py` configures the automated test environment.
-- `config/urls.py`, `config/asgi.py`, and `config/wsgi.py` are the project entry points. URL routing currently exposes Django admin only.
-- A private repository-root `.env` may supply local settings. It is ignored by Git; do not put shared or production credentials in it.
+- `config/urls.py`, `config/asgi.py`, and `config/wsgi.py` are the project entry points. URLs expose Django admin and the centralized `/api/v1/` API.
+- A private repository-root `.env` may supply local settings, including a separate `JWT_SIGNING_KEY`. It is ignored by Git; do not put shared or production credentials in it.
 
 ## Implemented Database Foundation
 
@@ -42,15 +42,25 @@ Services live under each owning app's `services/` package and accept typed actor
 - `locations/services/`: provenance-aware location claims, verification, correction history, and current-claim reads.
 - `notifications/services/`: simulated notification creation, delivery attempts, recipient reads, and cancellation.
 
-Unresolved authority decisions fail closed through `PolicyNotConfigured`; tests inject narrowly scoped policies. This includes candidate verify/reject, source register/authorize, assignment, incident resolve/close, and administrator override authority. No role is silently granted these powers.
+Unresolved authority decisions fail closed through `PolicyNotConfigured`; tests inject narrowly scoped policies. This includes candidate verify/reject, source register/authorize, assignment creation, incident resolve/close, and administrator override authority. No role is silently granted these powers.
+
+## HTTP API Layer
+
+The API is a transport adapter over the existing domain services. Human requests use database-backed SimpleJWT access tokens; refresh tokens rotate and are blacklisted, and password changes invalidate prior access and refresh tokens. DRF does not enable browser session authentication. Protected collections scope records before pagination, and response writes call the existing assignment services.
+
+The API exposes account/profile and own-membership reads, assignment-scoped incident summaries, assigned-target response commands, and recipient-owned notification reads. Candidate review, source administration, incident resolution/closure, assignment creation/cancellation/reassignment, evidence reads, and location reads are unavailable while their authority rules remain unresolved. Evidence upload is unavailable without an approved storage provider. Detection intake has a separate machine-authentication interface and returns unavailable until OAD-017 and source authorization are configured.
+
+See [API documentation](../docs/api_documentation/README.md) for endpoint contracts and blocked capabilities.
 
 ## Dependencies
 
-The supported local Python version is recorded in `.python-version` (`3.14.10`). Runtime dependencies are pinned in `requirements/base.txt` and include Django, Django REST Framework, Psycopg, and `python-dotenv`. `requirements/development.txt` adds pytest, pytest-django, and Ruff. `requirements/production.txt` contains runtime pins; it does not configure or imply a production deployment.
+The supported local Python version is recorded in `.python-version` (`3.14.10`). Runtime dependencies are pinned in `requirements/base.txt` and include Django, Django REST Framework, SimpleJWT, drf-spectacular, PyJWT, Psycopg, and `python-dotenv`. `requirements/development.txt` adds pytest, pytest-django, and Ruff. `requirements/production.txt` contains runtime pins; it does not configure or imply a production deployment.
 
 ## Local PostgreSQL Setup
 
 Create a private repository-root `.env` from `.env.example` and set local-only values. The settings read `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, and `POSTGRES_PORT`; defaults target `resqvision_dev` on `127.0.0.1:5433`.
+
+Development settings use a local-only JWT signing fallback when `JWT_SIGNING_KEY` is absent. Configure a unique randomly generated signing key of at least 32 characters in any shared environment. Production settings must provide it explicitly; it must differ from `DJANGO_SECRET_KEY`. Development and test fallback keys are not deployment credentials.
 
 The optional PostgreSQL 18.7 Compose service binds only to loopback. From the repository root, start it with:
 
@@ -82,8 +92,8 @@ With the local PostgreSQL database available, run schema and test checks from `b
 .\.venv\Scripts\python.exe -m pip check
 ```
 
-`pytest.ini` selects `config.settings.test`. Tests use PostgreSQL and a separate test database; the current suite passes 67 tests, including service integration, rollback, idempotency, and concurrency coverage. The test-only password hasher and secret are not deployment settings.
+`pytest.ini` selects `config.settings.test`. Tests use PostgreSQL and a separate test database. The Phase 3 suite contains 67 persistence/domain tests; Phase 4 adds API authentication, authorization, throttling, and integration tests. The latest PostgreSQL-backed run passed all 87 tests. The test-only password hasher, signing key, and isolated throttle cache are not deployment settings.
 
 ## Implementation Boundaries
 
-Django admin is available. REST endpoints, JWT/login/token workflows, mobile authentication, and client-facing serializers are not implemented. Domain services provide internal business operations, but authority remains policy-injected where project decisions are open. AI processing, mobile integrations, actual object-storage operations, external notification delivery, and production deployment are also unimplemented. Notifications and Police/Hospital response records remain simulated; no real emergency integration is configured.
+Django admin and the versioned human REST API are available. AI_SERVICE authentication remains disabled; mobile authentication integration, AI processing, real object-storage operations, external notification delivery, and production deployment are not configured. Domain services keep authority policy-injected where project decisions are open. Notifications and Police/Hospital response records remain simulated; no real emergency integration is configured.

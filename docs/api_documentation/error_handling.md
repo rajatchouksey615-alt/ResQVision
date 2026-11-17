@@ -1,15 +1,30 @@
-# API Error Response Conventions
+# API Error Handling
 
-**Status:** REVISED_DRAFT — pending team approval; no endpoint implements it yet.
+All DRF errors use this envelope:
 
-Errors should have a stable machine-readable code, a safe human-readable detail, and optional field-level validation errors. Use the appropriate HTTP status. Do not return stack traces, credentials, internal implementation details, storage paths, or confirmation that an out-of-scope candidate, incident, assignment, or evidence object exists.
+```json
+{
+  "code": "validation_error",
+  "detail": "Request data is invalid.",
+  "errors": {"field": ["A value is required."]},
+  "request_id": "5a099c5d-2fed-44f4-90cc-07be655f9aa2"
+}
+```
 
-Future event-intake outcomes should distinguish accepted, idempotent duplicate, validation rejection, unauthorized service/source, and retryable/unavailable outcomes without defining a wire schema here. Evidence upload and retrieval failures must not mark media AVAILABLE or mutate candidate, incident, assignment, or notification state. A timeout after submission is an unknown outcome and must be safely retried with the same event identity.
+`errors` is omitted except for field-level validation failures. The request ID is a UUID returned in both the body and `X-Request-ID` response header. A valid client UUID may be reused as the correlation ID; invalid values are replaced.
 
-Audit security-sensitive denials and state transitions without logging passwords, tokens, camera credentials, or raw media. Keep simulated notification failures clearly separate from assignment acknowledgement and incident state.
+| Condition | Status | Code |
+|---|---:|---|
+| Missing or invalid human credentials | 401 | `authentication_failed` |
+| Authenticated but denied | 403 | `authorization_denied` |
+| Missing or out-of-scope resource | 404 | `not_found` |
+| Invalid domain state / conflicting command | 409 | `invalid_state`, `idempotency_conflict`, or `resource_conflict` |
+| Request validation failure | 400 | `validation_error` |
+| Unapproved policy or disabled machine authentication | 503 | `policy_unavailable` or `machine_authentication_unavailable` |
+| Missing evidence storage provider | 503 | `evidence_storage_unavailable` |
+| Rate limit exceeded | 429 | `rate_limited` |
+| Request body over 1 MiB | 413 | `request_too_large` |
 
-Illustrative shape, not an implemented contract:
+The API does not return tracebacks, SQL errors, credentials, tokens, storage paths, or internal exception details. Queries with defined object scope filter before retrieval; intentionally blocked operations return the same unavailable outcome regardless of supplied resource ID.
 
-    {"code":"validation_error","detail":"Request data is invalid.","errors":{"field":["Reason"]}}
-
-Finalize schema and localization needs when API contracts are designed.
+Domain writes preserve service-level audit events and idempotency. Passwords, refresh/access tokens, camera credentials, and raw media are not added to audit context.
