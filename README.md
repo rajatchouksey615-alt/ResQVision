@@ -66,7 +66,7 @@ Role permissions and workflows are in revised draft and pending team approval. P
 
 ## Repository Structure
 
-- mobile_app: Flutter application foundation, architecture notes, assets, and test placeholders.
+- mobile_app: Flutter application foundation for Android and Windows, with architecture notes, assets, and unit/widget tests.
 - backend: Django configuration, domain models, migrations, internal domain services, versioned REST API, and PostgreSQL-backed tests.
 - ai_service: video analysis service foundation, source boundaries, model and dataset policies, and test placeholders.
 - infrastructure: future development and deployment configuration conventions.

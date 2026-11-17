@@ -8,7 +8,7 @@ This is an index of the current planned stack and unresolved choices. A planned 
 
 | Area | Current direction | Status and implication |
 |---|---|---|
-| Mobile | Flutter and Dart | Planned; SDK and state management TBD |
+| Mobile | Flutter and Dart | Phase 5A foundation implemented for Android and Windows; Dart `^3.11.1`; built-in Navigator and IO HTTP transport, with feature state management deferred until needed |
 | Backend | Python, Django, Django REST Framework | Planned; versions and service topology TBD |
 | Structured data | PostgreSQL | Planned; logical entities may be described, schema not approved |
 | AI and vision | Python, YOLO, OpenCV, PyTorch, NumPy | Planned; model/version, tracking, thresholds, and evaluation method TBD |
