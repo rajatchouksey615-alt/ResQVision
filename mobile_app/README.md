@@ -46,7 +46,32 @@ flutter analyze
 flutter test
 ```
 
-`test/integration/live_backend_auth_test.dart` exercises login, profile retrieval, refresh rotation, restoration, logout, and revocation against a live Django server when `RESQVISION_TEST_API_BASE_URL`, `RESQVISION_TEST_EMAIL`, and `RESQVISION_TEST_PASSWORD` point to an isolated test account. It is skipped in the ordinary test run when these values are absent. The test never prints or persists the supplied password.
+`test/integration/live_backend_auth_test.dart` exercises login, profile retrieval, refresh rotation, restoration, logout, and revocation against a live Django server when `RESQVISION_TEST_API_BASE_URL`, `RESQVISION_TEST_EMAIL`, and `RESQVISION_TEST_PASSWORD` point to an isolated local test account. `test/integration/live_dashboard_test.dart` also accepts the generic account for a single-account role check. Dedicated workspace tests use `RESQVISION_TEST_ADMIN_EMAIL` / `RESQVISION_TEST_ADMIN_PASSWORD`, `RESQVISION_TEST_POLICE_EMAIL` / `RESQVISION_TEST_POLICE_PASSWORD`, and `RESQVISION_TEST_HOSPITAL_EMAIL` / `RESQVISION_TEST_HOSPITAL_PASSWORD`; each email must be distinct and use a reserved `.test` domain. The live dashboard tests check the roles and active memberships returned by Django, and test Police↔Hospital assignment isolation and cross-account logout ownership. The Admin fixture has no active operational membership; its suspended Police membership verifies that the backend does not grant data access based on inactive scope.
+
+### Local live integration fixture
+
+The live-test setup command is deliberately restricted to `DEBUG=True`, PostgreSQL, loopback database connections, and the connected database named exactly `resqvision_dev`. It also requires explicit process opt-in with `RESQVISION_LOCAL_TEST_DATA_OPT_IN=1`. From the repository root, run:
+
+```powershell
+$env:RESQVISION_LOCAL_TEST_DATA_OPT_IN = '1'
+$env:RESQVISION_TEST_API_BASE_URL = 'http://127.0.0.1:8001/api/v1/'
+# Optional: provide dedicated local accounts and replace password placeholders.
+$env:RESQVISION_TEST_EMAIL = 'phase5c.auth@resqvision.test'
+$env:RESQVISION_TEST_PASSWORD = '<local-generic-test-password>'
+$env:RESQVISION_TEST_ADMIN_EMAIL = 'phase5c.admin@resqvision.test'
+$env:RESQVISION_TEST_ADMIN_PASSWORD = '<local-admin-test-password>'
+$env:RESQVISION_TEST_POLICE_EMAIL = 'phase5c.police@resqvision.test'
+$env:RESQVISION_TEST_POLICE_PASSWORD = '<local-police-test-password>'
+$env:RESQVISION_TEST_HOSPITAL_EMAIL = 'phase5c.hospital@resqvision.test'
+$env:RESQVISION_TEST_HOSPITAL_PASSWORD = '<local-hospital-test-password>'
+.\mobile_app\scripts\run_local_live_integration.ps1
+```
+
+The runner uses the existing test variables above. If an account email and password pair is both absent, it uses a reserved local `.test` email and creates a random password in the current PowerShell process only. If only one value in a pair is supplied, it fails rather than substituting another identity. Supply both values to reuse a managed account. To explicitly replace passwords only for accounts already marked by the local fixture, pass `-RotateManagedTestPasswords`; an existing unmarked account is always rejected. The runner starts Django on loopback at the configured port, verifies the anonymous incident endpoint returns `401`, runs the live role and cross-account checks, waits for the documented login throttle window, then runs the Phase 5B lifecycle test. It refuses a nonlocal API URL or a port already owned by another process. It does not print, save, or report passwords or tokens.
+
+The command `python manage.py setup_local_dashboard_test_data` creates or reuses four managed users (ADMIN, POLICE, HOSPITAL, and a role-free generic authentication identity), one test-only Police organization, one test-only Hospital organization, one source-owner organization, active Police/Hospital memberships, and one suspended Police membership for the Admin fixture. It then creates one controlled-file video source and six detection events; each event goes through candidate review/verification to an OPEN incident with independent PENDING Police and Hospital assignments. Six incidents make the live `limit=5` response return real backend continuation metadata. Django also records the associated source, review, and assignment audit/history rows. The ADMIN has no active operational membership, staff or superuser privileges, and the suspended membership verifies that inactive scope does not reveal incident data. The setup does not create notifications, send messages, contact outside services, dispatch emergency responders, or delete records. Records remain in `resqvision_dev`; no automatic cleanup is provided.
+
+The local-only fixture command uses a narrow policy object only while invoking existing domain services from that management command. No API authorization policy or production authentication behavior is changed. Live tests require the local API base URL and each intended account's email/password variables; without them, they skip with a specific reason. Never use a production or personal account, commit credentials, or put passwords in `.env.example` or test reports. The generic Phase 5B lifecycle test must run separately from the three role accounts to stay within Django's login throttle.
 
 ## Scope boundaries
 

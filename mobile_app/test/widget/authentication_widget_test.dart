@@ -52,6 +52,16 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Welcome, Rajat Reviewer'), findsOneWidget);
       expect(find.text('POLICE workspace'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Central Police · central-police'),
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byType(RefreshIndicator),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
       expect(find.text('Central Police · central-police'), findsOneWidget);
       harness.close();
     },
@@ -100,6 +110,12 @@ void main() {
       if (request.uri.path.endsWith('/auth/logout/')) {
         return jsonResponse(503, '{}');
       }
+      if (request.uri.path.endsWith('/incidents/')) {
+        return jsonResponse(
+          200,
+          '{"count":0,"next":null,"previous":null,"results":[]}',
+        );
+      }
       throw StateError('Unexpected request path.');
     });
     final AuthHarness harness = AuthHarness(transport: transport);
@@ -142,6 +158,12 @@ AuthHarness _successfulHarness() => AuthHarness(
     if (request.uri.path.endsWith('/auth/logout/')) {
       return jsonResponse(204, '');
     }
+    if (request.uri.path.endsWith('/incidents/')) {
+      return jsonResponse(
+        200,
+        '{"count":0,"next":null,"previous":null,"results":[]}',
+      );
+    }
     throw StateError('Unexpected request path.');
   }),
 );
@@ -149,6 +171,7 @@ AuthHarness _successfulHarness() => AuthHarness(
 ResQVisionApp _app(AuthHarness harness) => ResQVisionApp(
   config: AppConfig.fromValues(apiBaseUrl: 'http://127.0.0.1:8000/api/v1/'),
   sessionController: harness.session,
+  dashboardRepository: harness.dashboardRepository,
 );
 
 bool _passwordIsObscured(WidgetTester tester) =>

@@ -3,14 +3,20 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_loading_state.dart';
+import '../../dashboard/data/dashboard_repository.dart';
 import '../application/auth_session_controller.dart';
 import 'login_screen.dart';
 import 'role_landing_screen.dart';
 
 class SessionGate extends StatelessWidget {
-  const SessionGate({super.key, required this.session});
+  const SessionGate({
+    super.key,
+    required this.session,
+    this.dashboardRepository,
+  });
 
   final AuthSessionController session;
+  final DashboardRepository? dashboardRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -42,10 +48,18 @@ class SessionGate extends StatelessWidget {
                 ),
               );
             }
-            return RoleLandingScreen(session: session, user: user);
+            return RoleLandingScreen(
+              session: session,
+              user: user,
+              dashboardRepository: dashboardRepository,
+            );
           case SessionStatus.recoverableError:
             if (session.user != null) {
-              return RoleLandingScreen(session: session, user: session.user!);
+              return RoleLandingScreen(
+                session: session,
+                user: session.user!,
+                dashboardRepository: dashboardRepository,
+              );
             }
             return _SessionRecoveryScreen(session: session);
         }

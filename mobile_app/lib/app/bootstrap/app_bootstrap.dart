@@ -8,9 +8,11 @@ import '../../core/errors/app_error.dart';
 import '../../core/errors/app_exception.dart';
 import '../../core/logging/app_logger.dart';
 import '../../core/networking/api_client.dart';
+import '../../core/networking/authenticated_api_client.dart';
 import '../../core/security/flutter_token_storage.dart';
 import '../../features/authentication/application/auth_session_controller.dart';
 import '../../features/authentication/data/auth_repository.dart';
+import '../../features/dashboard/data/dashboard_repository.dart';
 import '../app.dart';
 
 Future<void> bootstrap({AppConfig Function()? loadConfiguration}) async {
@@ -19,14 +21,22 @@ Future<void> bootstrap({AppConfig Function()? loadConfiguration}) async {
   AppConfig? config;
   AppError? startupError;
   AuthSessionController? sessionController;
+  DashboardRepository? dashboardRepository;
 
   try {
     final AppConfig loadedConfig =
         (loadConfiguration ?? AppConfig.fromEnvironment)();
     config = loadedConfig;
+    final ApiClient apiClient = ApiClient(config: loadedConfig);
     sessionController = AuthSessionController(
-      repository: AuthRepository(apiClient: ApiClient(config: loadedConfig)),
+      repository: AuthRepository(apiClient: apiClient),
       tokenStorage: FlutterTokenStorage(),
+    );
+    dashboardRepository = DashboardRepository(
+      apiClient: AuthenticatedApiClient(
+        apiClient: apiClient,
+        session: sessionController,
+      ),
     );
     unawaited(sessionController.restoreSession());
     logger.info('app.startup.ready');
@@ -43,6 +53,7 @@ Future<void> bootstrap({AppConfig Function()? loadConfiguration}) async {
       config: config,
       startupError: startupError,
       sessionController: sessionController,
+      dashboardRepository: dashboardRepository,
     ),
   );
 }

@@ -1,0 +1,20 @@
+import 'package:flutter/material.dart';
+
+import '../application/dashboard_controller.dart';
+import '../data/dashboard_repository.dart';
+import '../presentation/dashboard_overview_content.dart';
+
+class HospitalDashboardScreen extends StatelessWidget {
+  const HospitalDashboardScreen({super.key, required this.controller});
+
+  final DashboardController controller;
+
+  @override
+  Widget build(BuildContext context) => DashboardOverviewContent(
+    controller: controller,
+    role: DashboardRole.hospital,
+    sectionTitle: 'Assigned hospital incidents',
+    description:
+        'Read-only incident and response assignment information for active hospital memberships.',
+  );
+}
