@@ -4,6 +4,7 @@ import '../../../app/theme/app_spacing.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_loading_state.dart';
 import '../../dashboard/data/dashboard_repository.dart';
+import '../../incidents/data/incident_repository.dart';
 import '../application/auth_session_controller.dart';
 import 'login_screen.dart';
 import 'role_landing_screen.dart';
@@ -13,10 +14,12 @@ class SessionGate extends StatelessWidget {
     super.key,
     required this.session,
     this.dashboardRepository,
+    this.incidentRepository,
   });
 
   final AuthSessionController session;
   final DashboardRepository? dashboardRepository;
+  final IncidentRepository? incidentRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +55,7 @@ class SessionGate extends StatelessWidget {
               session: session,
               user: user,
               dashboardRepository: dashboardRepository,
+              incidentRepository: incidentRepository,
             );
           case SessionStatus.recoverableError:
             if (session.user != null) {
@@ -59,6 +63,7 @@ class SessionGate extends StatelessWidget {
                 session: session,
                 user: session.user!,
                 dashboardRepository: dashboardRepository,
+                incidentRepository: incidentRepository,
               );
             }
             return _SessionRecoveryScreen(session: session);

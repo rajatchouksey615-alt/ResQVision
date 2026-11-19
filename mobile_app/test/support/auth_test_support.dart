@@ -10,6 +10,7 @@ import 'package:resqvision_mobile/core/security/token_storage.dart';
 import 'package:resqvision_mobile/features/authentication/application/auth_session_controller.dart';
 import 'package:resqvision_mobile/features/authentication/data/auth_repository.dart';
 import 'package:resqvision_mobile/features/dashboard/data/dashboard_repository.dart';
+import 'package:resqvision_mobile/features/incidents/data/incident_repository.dart';
 
 class MemoryTokenStorage implements TokenStorage {
   AuthTokens? tokens;
@@ -81,6 +82,7 @@ class AuthHarness {
     dashboardRepository = DashboardRepository(
       apiClient: authenticatedApiClient,
     );
+    incidentRepository = IncidentRepository(apiClient: authenticatedApiClient);
   }
 
   final MemoryTokenStorage storage;
@@ -90,6 +92,7 @@ class AuthHarness {
   late final AuthSessionController session;
   late final AuthenticatedApiClient authenticatedApiClient;
   late final DashboardRepository dashboardRepository;
+  late final IncidentRepository incidentRepository;
 
   void close() {
     session.dispose();

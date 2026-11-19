@@ -431,6 +431,40 @@ void main() {
     expect(find.text('Sign out'), findsOneWidget);
   });
 
+  testWidgets('incident management is reachable from the role workspace', (
+    WidgetTester tester,
+  ) async {
+    final AuthHarness harness = await _dashboardHarness(
+      profile: dashboardProfile(),
+      incidentHandler: (ApiRequest request) async {
+        if (request.uri.path.endsWith('/incidents/')) {
+          return pageResponse(results: <Map<String, Object?>>[incident()]);
+        }
+        if (request.uri.path.endsWith('/assignments/')) {
+          return pageResponse(
+            results: <Map<String, Object?>>[
+              assignment(
+                organizationId: policeOrganizationId,
+                organizationKind: 'POLICE',
+              ),
+            ],
+          );
+        }
+        throw StateError('Unexpected request path.');
+      },
+    );
+    addTearDown(harness.close);
+
+    await tester.pumpWidget(_app(harness));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Incidents').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Police incidents'), findsOneWidget);
+    expect(find.textContaining('Incident · 732dfcb2'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('narrow mobile layout uses bottom navigation without overflow', (
     WidgetTester tester,
   ) async {
@@ -482,4 +516,5 @@ ResQVisionApp _app(AuthHarness harness) => ResQVisionApp(
   config: AppConfig.fromValues(apiBaseUrl: 'http://127.0.0.1:8000/api/v1/'),
   sessionController: harness.session,
   dashboardRepository: harness.dashboardRepository,
+  incidentRepository: harness.incidentRepository,
 );

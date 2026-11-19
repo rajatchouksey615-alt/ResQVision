@@ -11,6 +11,8 @@ import '../../authentication/data/models/authenticated_user.dart';
 import '../admin/admin_dashboard_screen.dart';
 import '../application/dashboard_controller.dart';
 import '../data/dashboard_repository.dart';
+import '../../incidents/data/incident_repository.dart';
+import '../../incidents/presentation/incident_management_screen.dart';
 import '../hospital/hospital_dashboard_screen.dart';
 import '../police/police_dashboard_screen.dart';
 import 'dashboard_widgets.dart';
@@ -21,11 +23,13 @@ class DashboardShell extends StatefulWidget {
     required this.session,
     required this.user,
     required this.repository,
+    this.incidentRepository,
   });
 
   final AuthSessionController session;
   final AuthenticatedUser user;
   final DashboardRepository repository;
+  final IncidentRepository? incidentRepository;
 
   @override
   State<DashboardShell> createState() => _DashboardShellState();
@@ -83,9 +87,11 @@ class _DashboardShellState extends State<DashboardShell> {
           body: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
               final bool wide = constraints.maxWidth >= 720;
-              final Widget content = _selectedSection == 0
-                  ? _overviewForSelectedRole()
-                  : _ProfileSummary(user: widget.user);
+              final Widget content = switch (_selectedSection) {
+                0 => _overviewForSelectedRole(),
+                1 => _incidentsForSelectedRole(),
+                _ => _ProfileSummary(user: widget.user),
+              };
               final Widget main = Column(
                 children: <Widget>[
                   _WorkspaceControls(
@@ -120,6 +126,11 @@ class _DashboardShellState extends State<DashboardShell> {
                         label: Text('Overview'),
                       ),
                       NavigationRailDestination(
+                        icon: Icon(Icons.car_crash_outlined),
+                        selectedIcon: Icon(Icons.car_crash),
+                        label: Text('Incidents'),
+                      ),
+                      NavigationRailDestination(
                         icon: Icon(Icons.person_outline),
                         selectedIcon: Icon(Icons.person),
                         label: Text('Profile'),
@@ -143,6 +154,11 @@ class _DashboardShellState extends State<DashboardShell> {
                       icon: Icon(Icons.dashboard_outlined),
                       selectedIcon: Icon(Icons.dashboard),
                       label: 'Overview',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.car_crash_outlined),
+                      selectedIcon: Icon(Icons.car_crash),
+                      label: 'Incidents',
                     ),
                     NavigationDestination(
                       icon: Icon(Icons.person_outline),
@@ -179,6 +195,26 @@ class _DashboardShellState extends State<DashboardShell> {
         controller: _controller,
       ),
     };
+  }
+
+  Widget _incidentsForSelectedRole() {
+    final DashboardRole? role = _controller.selectedRole;
+    final IncidentRepository? incidentRepository = widget.incidentRepository;
+    if (role == null || incidentRepository == null) {
+      return const Center(
+        child: AppEmptyState(
+          title: 'Incident management unavailable',
+          message: 'The authenticated incident data service is not configured.',
+          icon: Icons.lock_outline,
+        ),
+      );
+    }
+    return IncidentManagementScreen(
+      repository: incidentRepository,
+      role: role,
+      memberships: widget.user.memberships,
+      organizationId: _controller.selectedOrganizationId,
+    );
   }
 }
 

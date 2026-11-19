@@ -5,6 +5,7 @@ import '../core/errors/app_error.dart';
 import '../features/authentication/application/auth_session_controller.dart';
 import '../features/authentication/presentation/session_gate.dart';
 import '../features/dashboard/data/dashboard_repository.dart';
+import '../features/incidents/data/incident_repository.dart';
 import '../features/dashboard/presentation/about_screen.dart';
 import '../features/dashboard/presentation/foundation_home_screen.dart';
 import 'router/app_router.dart';
@@ -17,12 +18,14 @@ class ResQVisionApp extends StatelessWidget {
     this.startupError,
     this.sessionController,
     this.dashboardRepository,
+    this.incidentRepository,
   });
 
   final AppConfig? config;
   final AppError? startupError;
   final AuthSessionController? sessionController;
   final DashboardRepository? dashboardRepository;
+  final IncidentRepository? incidentRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +45,7 @@ class ResQVisionApp extends StatelessWidget {
             : SessionGate(
                 session: sessionController!,
                 dashboardRepository: dashboardRepository,
+                incidentRepository: incidentRepository,
               ),
         about: const AboutScreen(),
       ),

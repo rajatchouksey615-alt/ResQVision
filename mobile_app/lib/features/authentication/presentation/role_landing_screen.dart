@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../dashboard/data/dashboard_repository.dart';
 import '../../dashboard/presentation/dashboard_shell.dart';
+import '../../incidents/data/incident_repository.dart';
 import '../application/auth_session_controller.dart';
 import '../data/models/authenticated_user.dart';
 
@@ -13,11 +14,13 @@ class RoleLandingScreen extends StatelessWidget {
     required this.session,
     required this.user,
     required this.dashboardRepository,
+    this.incidentRepository,
   });
 
   final AuthSessionController session;
   final AuthenticatedUser user;
   final DashboardRepository? dashboardRepository;
+  final IncidentRepository? incidentRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +52,11 @@ class RoleLandingScreen extends StatelessWidget {
         ),
       );
     }
-    return DashboardShell(session: session, user: user, repository: repository);
+    return DashboardShell(
+      session: session,
+      user: user,
+      repository: repository,
+      incidentRepository: incidentRepository,
+    );
   }
 }

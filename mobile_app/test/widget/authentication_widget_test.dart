@@ -172,6 +172,7 @@ ResQVisionApp _app(AuthHarness harness) => ResQVisionApp(
   config: AppConfig.fromValues(apiBaseUrl: 'http://127.0.0.1:8000/api/v1/'),
   sessionController: harness.session,
   dashboardRepository: harness.dashboardRepository,
+  incidentRepository: harness.incidentRepository,
 );
 
 bool _passwordIsObscured(WidgetTester tester) =>
