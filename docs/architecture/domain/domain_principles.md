@@ -1,6 +1,6 @@
 # Domain Principles
 
-**Decision status:** Proposed governance baseline; no business-policy approval is recorded.  
+**Decision status:** Proposed governance baseline with a scoped project-owner-approved Police-first workflow amendment dated 2026-11-19; broader business policy remains unapproved.
 **Basis:** Requirements and OAD documents are `REVISED_DRAFT`; implementation evidence does not confer approval.
 
 This document converts the supplied domain principles into traceable domain and security invariants. `Documented` means present in the draft requirements/design. `Implemented` means code evidence exists. Neither label means a stakeholder approved the policy.
@@ -11,7 +11,7 @@ This document converts the supplied domain principles into traceable domain and 
 |---|---|---|---|
 | DP-01 | Single source of truth | Django is authoritative for identities, authorization, candidate and incident state, assignments, and evidence access decisions. Clients and AI submit commands/observations; they do not write authoritative state directly. | SRS §6; `backend/api/v1`; proposed/documented and partly implemented. |
 | DP-02 | Separate observation, candidate, incident | `DetectionEvent` is an AI observation; `AccidentCandidate` is a potential event under review; `AccidentIncident` is authoritative after human verification. Do not collapse them into one status field. | FR-004/005/018/019; separate Django models and FKs; OAD-015 proposed. |
-| DP-03 | Human accountability | A consequential verification/rejection is attributable to an authenticated, authorized human. Model confidence, event count, or machine identity cannot verify an incident. | FR-005; `CandidateReview.reviewer`; AI identity checks; authority still unresolved. |
+| DP-03 | Human accountability | A consequential verification/rejection is attributable to an authenticated, authorized human. Under the owner-approved workflow, only a specifically authorized human Police reviewer decides; model confidence, event count, or machine identity cannot verify an incident. | FR-005; `CandidateReview.reviewer`; Police reviewer role/order approved, individual grant and scope still unresolved. |
 | DP-04 | Least privilege | Grant only a specific action over a specific approved scope. `ADMIN`, `POLICE`, and `HOSPITAL` names alone do not imply global access. | Role matrix and API contract; no blanket Admin policy in selectors. |
 | DP-05 | Organization isolation | Police/Hospital access requires a currently active membership matching the target organization kind and an in-scope assignment. A membership in one organization grants no access to another. | `OrganizationMembership`, `require_membership`, `visible_assignment_queryset`; implemented for enabled reads/commands. |
 | DP-06 | Independent agency operations | Each Police/Hospital assignment owns its response state/history. An agency cannot mutate another assignment. Notification state is independent too. | OAD-018 proposed; `ResponseAssignment`, `Response`, history, and target-membership checks implemented. |
@@ -29,7 +29,7 @@ This document converts the supplied domain principles into traceable domain and 
 | Principal | Identity type | Proposed capability boundary | Current implementation evidence |
 |---|---|---|---|
 | ADMIN | Human Django user/group | Only explicit, audited administrative actions. No implicit global incident, evidence, location, or audit access. Reviewer/resolver/assignment powers need separate approval. | Incident visibility is membership/assignment-scoped; unapproved actions fail closed. |
-| POLICE | Human Django user/group plus active Police membership | View and update only its authorized Police-target assignment and minimum approved incident/evidence data. No candidate decision authority by default. | Assignment services recheck target membership; candidate permissions/routes blocked. |
+| POLICE | Human Django user/group plus active Police membership | View/update only its authorized Police-target assignment and minimum approved data. Candidate decision authority is limited to a specifically authorized Police reviewer under the owner-approved workflow; group membership alone grants nothing. | Assignment services recheck target membership; candidate route remains blocked pending individual/scope policy. |
 | HOSPITAL | Human Django user/group plus active Hospital membership | View/update only its authorized Hospital-target assignment and minimum approved information. Readiness is not treatment. No candidate decision authority by default. | Activity kind is target-specific; candidate/evidence routes blocked. |
 | AI_SERVICE | Separate machine actor | Only explicitly configured event intake and asset-specific evidence upload/completion. No human account, candidate decision, incident, assignment, notification, or general evidence-read authority. | `MachineActor` is separate; authenticator is unconfigured so event intake fails closed. |
 | Source owner/operator | External governance actor | Owns permission for source use; not assumed to have an app role or login. | Source registration authority remains open under OAD-019. |

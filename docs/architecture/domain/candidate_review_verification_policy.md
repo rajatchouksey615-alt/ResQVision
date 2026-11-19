@@ -1,12 +1,14 @@
 # Candidate Review and Verification Policy
 
-**Decision status:** Proposed; reviewer authority and decision criteria require explicit approval.  
+**Decision status:** Police-first reviewer role and workflow order approved by the project owner on 2026-11-19; individual reviewer grants, scope, and decision criteria remain unresolved.
 **Related existing decisions:** OAD-005, OAD-012, OAD-015.  
 **Related requirements:** FR-004, FR-005, FR-017, FR-018, FR-019; NFR-002, NFR-008, NFR-009, NFR-019.
 
 ## Recommendation
 
-Use a designated human reviewer cohort with explicit action permissions and an explicit candidate scope. The authority must be granted independently for candidate visibility, review initiation/annotation, and final verification or rejection. Do not infer these powers from a generic `ADMIN`, `POLICE`, or `HOSPITAL` group. `ADMIN` is one candidate for the reviewer cohort in existing draft requirements; it is not an approved default. Police and Hospital users have no candidate-review permission unless stakeholders explicitly approve a scoped additional responsibility.
+The project owner has approved a Police-first workflow: a candidate is routed to an appropriately authorized human Police reviewer, who records the decision after reviewing permitted information. This approves the reviewer role class and workflow order only. It does **not** authorize every `POLICE` user or establish a runtime grant. The designated reviewer identity/group, source or jurisdiction scope, queue/assignment model, permitted fields, and criteria must still be recorded. `ADMIN` is not an approved substitute reviewer; Hospital users have no candidate-review permission under this workflow.
+
+Grant candidate visibility, review initiation, and final verification/rejection as explicit actions over explicit candidate scope. Do not infer authority from group membership alone. The detailed safeguards below remain recommendations except where the Police-first role and ordering are explicitly approved above.
 
 For the prototype, recommend one authorized human final decision per candidate, after review of the available event provenance and approved evidence. A single-reviewer rule is easier to operate and matches the current `CandidateReview` uniqueness constraint. Whether high-risk/ambiguous cases need a second reviewer remains a stakeholder decision.
 
@@ -69,4 +71,4 @@ Recommend retaining a rejected candidate and its DetectionEvent/evidence links a
 
 ## Required Approvals
 
-The project team must approve reviewer identity/role, scope, review assignment or queue rules, one versus multiple final reviewers, the verification checklist, whether verification rationale is mandatory, conflict handling, candidate visibility, and treatment of insufficient/contradictory evidence. Domain stakeholders must approve any Police/Hospital review role and evidence fields they may see. Institutional data governance must approve retention and use of rejected cases for evaluation.
+The project owner has approved the Police reviewer role class and Police-before-Hospital sequence. The project team must still approve reviewer identity/group, candidate/source/jurisdiction scope, review assignment or queue rules, one versus multiple final reviewers, the verification checklist, whether verification rationale is mandatory, conflict handling, candidate visibility, and treatment of insufficient/contradictory evidence. Police domain representatives and institutional data governance must confirm operational scope, permitted evidence fields, and retention/use of rejected cases. Hospital has no candidate-review authority under the approved workflow.

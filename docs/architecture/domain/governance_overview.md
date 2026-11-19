@@ -10,9 +10,9 @@ Domain Governance and Policy Review
 
 ResQVision already has a useful separation between AI observations, candidates, verified incidents, agency assignments, evidence metadata, and location claims. Django services and database constraints implement several integrity controls, including transactional candidate verification, independent agency assignment records, scoped incident reads, append-oriented audit records, and fail-closed policy hooks.
 
-The governance baseline is not approved. The SRS, requirements, workflows, role-permission matrix, architecture, and OAD register are marked `REVISED_DRAFT` or proposed. Existing code is evidence of current behavior, not evidence that the team or an agency approved that behavior. No candidate-review, verification, incident-resolution, evidence-access, or location-access permission is treated as approved here.
+The governance baseline is not fully approved. The SRS, requirements, workflows, role-permission matrix, architecture, and OAD register remain `REVISED_DRAFT` or proposed, and existing code is not evidence of approval. A project-owner task dated 2026-11-19 now explicitly approves the conceptual Police-first verification and simulated Hospital response sequence. That approval fixes role order and workflow outcomes only; it does not grant runtime permissions or settle reviewer identity/scope, Hospital routing, response-state contracts, evidence/location access, or retention. The scoped approval and remaining gates are recorded in the [Accident Verification and Emergency Response Governance Workflow](accident_verification_emergency_response_workflow.md).
 
-The main recommendation is to keep privileged operations unavailable until named decision owners approve the authority and scope policies recorded below. Preserve the existing fail-closed behavior while those decisions are pending. This overview and its supporting policy and register documents form the domain governance package.
+Keep privileged operations unavailable until the remaining action authority, identity, scope, and contracts are recorded. Preserve fail-closed behavior while those details are pending. The owner-approved sequence is a governance decision, not authorization to enable the routes.
 
 ## Repository Audit
 
@@ -32,7 +32,7 @@ The [existing OAD register](../open_architecture_decisions.md) is a revised draf
 |---|---|---|
 | OAD-001, OAD-020 | Map provider, display precision, location authority, and correction access remain open. Location model/service support exists, but API reads are disabled. | Keep provider and access decisions unresolved; approve provenance and correction authorities before enabling location endpoints. |
 | OAD-002, OAD-014, OAD-016 | Storage provider, media transfer, and retention durations remain undecided. Evidence metadata models exist; no configured provider/verifier enables a usable upload or retrieval workflow. | Keep media private, but defer vendor, transfer contract, retention periods, deletion authority, and legal holds to explicit approval. |
-| OAD-005, OAD-012 | AI verification method and human review authority are distinct open decisions. Requirements prohibit AI-only verification, but do not approve which humans may decide. | Preserve human-only final authority as a requirement-level draft principle; approve reviewer role, scope, criteria, and decision count before enabling review. |
+| OAD-005, OAD-012 | AI verification method remains open. The project owner has approved Police-first review by an appropriately authorized human Police reviewer, but reviewer identity/scope and criteria remain open. | Preserve human-only final authority; record only scoped Police reviewer grants after identity, source/jurisdiction scope, criteria, decision count, and permitted fields are approved. |
 | OAD-013, OAD-018, OAD-021 | Assignment creation/reassignment authority and timeout policy remain open. Assignment records and target-scoped response transitions exist; assignment creation has no public route. | Preserve independent target records; approve who can create/reassign and whether/when expiry exists. Do not imply dispatch. |
 | OAD-015 | Separate event, candidate, and incident records are recommended and implemented in the schema/services. | Retain the separation recommendation; code does not approve it as policy. |
 | OAD-017 | AI_SERVICE is a distinct machine actor, but the configured authenticator is absent and intake fails closed. | Keep machine and human identity separate; select and configure the mechanism only after security approval. |
@@ -50,19 +50,19 @@ The complete principle set and implementation evidence are in [Domain Principles
 - Evidence and precise location are sensitive. Media access must be backend-authorized; camera position must not be presented as accident position.
 - Prototype notifications and response representations must remain simulated; no emergency dispatch or real agency delivery is in scope.
 
-These are documented in draft requirements and implemented in part. They are not represented as organizationally approved policy.
+These baseline principles are documented in draft requirements and implemented in part. The Police-first workflow and simulation boundaries have since received the scoped project-owner approval recorded below; that does not convert the remaining draft principles or runtime permissions into approved policy.
 
 ## Candidate Review Authority
 
-The recommended model is an explicitly authorized human reviewer cohort with explicit candidate/resource scope, separate review and final-decision permissions, and no privilege inferred from `ADMIN`, `POLICE`, or `HOSPITAL` membership alone. `ADMIN` is one option in the existing requirements, not a blanket reviewer grant. Police and Hospital receive no candidate-review access by default. AI_SERVICE cannot review or decide.
+The project owner has approved a Police-first reviewer role class: a candidate is decided by an appropriately authorized human Police reviewer before any Hospital request. This is not a grant to every `POLICE` user. Candidate/resource scope, reviewer identity/group, queue assignment, and separate view/review/final-decision permissions must still be recorded explicitly. `ADMIN` is not a substitute reviewer by default; Hospital has no candidate-review role in this workflow. AI_SERVICE cannot review or decide.
 
 The backend currently models `RECEIVED → UNDER_REVIEW → VERIFIED | REJECTED`, one final `CandidateReview` per candidate, and required rationale for rejection. Verification rationale is optional in code. There is no reviewer-assignment entity, no `NEEDS_EVIDENCE` state, no dismissal state, and no reopen/re-review path. Candidate APIs currently return policy-unavailable responses. See [Candidate Review and Verification Policy](candidate_review_verification_policy.md).
 
 ## Candidate Verification Authority
 
-Only an explicitly authorized human may verify a candidate; AI confidence, event association, and reviewer convenience cannot establish an incident. The recommended MVP decision rule is one authorized human final decision, with a documented evidence/provenance checklist and a nonblank rationale for either outcome. This recommendation and whether a second independent decision is needed require approval by the project team and relevant domain stakeholders.
+Only an explicitly authorized human Police reviewer may verify a candidate under the owner-approved workflow; AI confidence, event association, and reviewer convenience cannot establish an incident. A successful Police verification atomically creates one linked `OPEN` incident. Rejection or inconclusive review creates no incident, and inconclusive candidates remain under review. The one-reviewer rule, evidence/provenance checklist, rationale requirements, permitted fields, and whether a second independent decision is needed remain pending.
 
-The service already creates the `VERIFIED` review, candidate state, linked `OPEN` incident, initial status history, and success audit within one transaction. Candidate row locking, a unique final-review constraint, a unique incident-per-candidate constraint, and command identifiers protect retries and races. This service is not reachable through an enabled review API while OAD-012 is unresolved.
+The service already creates the `VERIFIED` review, candidate state, linked `OPEN` incident, initial status history, and success audit within one transaction. Candidate row locking, a unique final-review constraint, a unique incident-per-candidate constraint, and command identifiers protect retries and races. The owner-approved workflow then creates an incident-linked request for the designated Hospital after incident commit. Hospital acknowledgement/availability and the simulated ambulance-dispatch decision/subsequent status are distinct. Reviewer/Hospital grants, target routing, request retry contract, and response states remain unresolved; APIs stay blocked.
 
 ## Rejection and Dismissal Policy
 
@@ -71,6 +71,8 @@ Recommend one nonterminal-to-final rejection outcome named `REJECTED`, with a re
 ## Incident Lifecycle
 
 The implemented model is `OPEN → RESPONSE_ACTIVE → RESOLVED → CLOSED`, with `OPEN → RESOLVED` also supported by the domain service. The first agency assignment entering `IN_PROGRESS` changes the incident to `RESPONSE_ACTIVE`; mere acknowledgement does not. Resolve requires a nonblank reason and all assignments in the service's terminal set (`COMPLETED`, `UNABLE_TO_RESPOND`, `CANCELLED`). Close requires `RESOLVED` and a nonblank reason. `EXPIRED` exists as an assignment enum but has no implemented transition and is not in the resolver's terminal set. Reopen is not implemented.
+
+The owner-approved Hospital request and simulated ambulance-response status are not new incident lifecycle states. The existing incident aggregate rule remains separate: acknowledgement alone does not set `RESPONSE_ACTIVE`; any mapping of a Hospital response progression to `IN_PROGRESS` requires a separate explicit decision.
 
 Resolver and closer authority, override handling, and post-closure correction remain unresolved. The draft incident workflow proposes `OPEN → RESOLVED` for a no-response outcome; the current service permits this when the assignment set is empty because the all-terminal guard is vacuously true, but does not require a distinct no-response reason. Resolve and close APIs fail closed. The proposed transition and precondition matrix is in [Incident Lifecycle Policy](incident_lifecycle_policy.md).
 
@@ -108,24 +110,25 @@ The [Domain Governance Decision Register](../decisions/domain_governance_decisio
 
 ## Stakeholder Approvals Required
 
-1. **Project team / requirements owner:** confirm the draft requirements and approve candidate reviewer scope, one- versus multi-reviewer decision count, verification checklist, rejection semantics, and whether verification rationale is mandatory.
-2. **Relevant Police/Hospital domain representatives:** confirm whether either agency needs candidate review, evidence fields, incident information, assignment visibility, and whether agency completion should only inform incident review.
+1. **Project team / requirements owner:** confirm the draft requirements and complete the already owner-approved Police reviewer scope, one- versus multi-reviewer decision count, verification checklist, rejection semantics, and whether verification rationale is mandatory.
+2. **Relevant Police/Hospital domain representatives:** confirm staffing/scope for the approved Police reviewer role, Hospital target/routing and response-state expectations, evidence fields, incident information, assignment visibility, and that Hospital completion does not imply incident closure. Hospital does not review candidates in the approved workflow.
 3. **Source/data owner and institutional privacy/data-governance representative:** approve evidence/location purpose, precision, role access, media retention, deletion authority, legal-hold handling, and evaluation-data reuse.
-4. **Project team with backend/security owners:** approve assignment creation/reassignment, incident resolver/closer and override scope, concurrency/idempotency contracts, machine-auth mechanism, storage provider/access pattern, and audit-read scope.
+4. **Project team with backend/security owners:** approve Hospital request creation/routing/recovery, assignment creation/reassignment, incident resolver/closer and override scope, response-state contracts, concurrency/idempotency, machine-auth mechanism, storage provider/access pattern, and audit-read scope.
 
 These are approval roles, not named people. The repository does not identify actual approvers.
 
 ## Approved Capabilities
 
-No business policy in the reviewed document set is marked approved: the governing requirements and OAD register are drafts, and there is no approved ADR. This means **no candidate, verification, incident closure, evidence, location, or machine-ingestion authority is claimed as policy-approved**.
+The ADR index still records no approved ADR, and the source OAD status entries remain unchanged. The project owner has now approved, at workflow level, Police-first human verification, one atomic `OPEN` incident after verification, a post-creation request for a designated Hospital, Hospital acknowledgement/availability, separate simulated dispatch/status events, independent scoping, auditability, and no real dispatch. This does **not** approve runtime candidate, Hospital-request, dispatch-status, incident-closure, evidence, location, or machine-ingestion permissions; detailed identity, scope, routing, and state contracts remain pending.
 
 The following are current implementation facts, not policy approvals: human JWT authentication; incident summary and assignment reads scoped through active target memberships/assignments; selected target-assignment response commands; distinct domain records; and fail-closed blocked routes. The mobile incident view is read-only.
 
 ## Unresolved and Blocked Capabilities
 
-- Candidate queue/detail, event association, review, verification, rejection: blocked by unresolved reviewer authority (OAD-012).
+- Police-first reviewer role/order is owner-approved, but candidate queue/detail, event association, review, verification, and rejection remain blocked until reviewer identities, scope, permitted fields, assignment, checklist, and rationale are recorded (OAD-012).
 - Incident resolve/close: blocked by unresolved authority and policy (OAD-012/OAD-018).
-- Assignment creation, cancellation, reassignment, expiry: authority unresolved (OAD-013/OAD-018/OAD-021); creation has no route.
+- Post-verification Hospital request order is owner-approved; target selection/routing, request/assignment mapping, idempotency/recovery, cancellation/reassignment, and expiry remain unresolved (OAD-013/OAD-018/OAD-021); request-creation route does not exist.
+- Hospital acknowledgement and simulated dispatch/status are owner-approved as separate workflow concepts, but the exact status vocabulary, actor grants, and API/history contracts remain unresolved (OAD-018).
 - Evidence metadata and media upload/retrieval: blocked by access policy, storage provider/verifier, transfer contract, and retention decisions (OAD-002/OAD-014/OAD-016).
 - Location read/create/verify/correct endpoints: blocked by scope, precision, authority, and conflict decisions (OAD-001/OAD-020).
 - AI_SERVICE event intake: machine-authenticator unconfigured (OAD-017), therefore fails closed.
@@ -133,7 +136,7 @@ The following are current implementation facts, not policy approvals: human JWT 
 
 ## Implementation Readiness
 
-**Policy readiness: not ready for privileged workflow implementation.** Preserve fail-closed API behavior until approvals are recorded. Noncontroversial engineering safeguards can be planned, but any new permission or workflow must cite the resulting approval and, where required, a separately approved ADR.
+**Policy readiness: not ready for privileged workflow implementation.** The Police-first sequence has owner approval, but the action-specific authorization and contract decisions required to implement it are incomplete. Preserve fail-closed API behavior until those remaining approvals are recorded. Any new permission or workflow must cite the relevant owner decision and, where required, a separately approved ADR.
 
 Approval, backend policy/API contracts, transaction/concurrency tests, storage and retention design, Flutter workflows, and deployment review are sequenced in [Incident Management Implementation Readiness](implementation_readiness.md). This package itself does not implement those items or run tests.
 
@@ -149,6 +152,7 @@ The governance documentation is organized under `docs/architecture/`:
 - [Authorization Matrix](../security/authorization_matrix.md)
 - [Domain Governance Decision Register](../decisions/domain_governance_decision_register.md)
 - [Incident Management Implementation Readiness](implementation_readiness.md)
+- [Accident Verification and Emergency Response Governance Workflow](accident_verification_emergency_response_workflow.md)
 - This architecture decision resolution report.
 
 Updated for current implementation accuracy and discoverability: `docs/architecture/README.md`, `docs/architecture/system_architecture.md`, `docs/architecture/component_architecture.md`, and the addendum link in `docs/architecture/open_architecture_decisions.md`. Existing OAD decisions and statuses remain unchanged.

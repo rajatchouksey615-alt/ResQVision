@@ -31,14 +31,14 @@
 - **Postconditions:** DetectionEvent or traceable processing outcome exists; event remains distinct from candidate and incident.
 - **Related requirements:** FR-003, FR-004, FR-028, FR-029.
 
-## UC-03 — Review an AccidentCandidate and create an incident only on verification
+## UC-03 — Police reviews an AccidentCandidate and creates incident only on verification
 
-- **Primary actor:** Authorized reviewer (role TBD; ADMIN is a proposal); AI service supplies evidence.
+- **Primary actor:** Specifically authorized human Police reviewer (role/order approved by project owner on 2026-11-19; individual identity/scope/criteria pending); AI service supplies observations only.
 - **Preconditions:** Backend has accepted one or more DetectionEvents and created/associated an AccidentCandidate in RECEIVED.
-- **Main flow:** Candidate enters UNDER_REVIEW; reviewer examines events, temporal evidence, EvidenceAssets, and LocationProvenance; reviewer verifies/rejects with reason; backend atomically creates one linked OPEN AccidentIncident only after VERIFIED.
-- **Alternatives/exceptions:** Candidate remains UNDER_REVIEW if insufficient, contradictory, or unavailable evidence; REJECTED candidate has no incident; transaction failure creates neither false verification nor orphan incident.
-- **Postconditions:** Candidate/incident links, reviewer, decision, time, evidence, and audit are preserved; incident has distinct lifecycle.
-- **Related requirements:** FR-005, FR-018, FR-019, FR-030.
+- **Main flow:** Candidate enters UNDER_REVIEW; the designated Police reviewer examines only permitted event/evidence/location information and records a decision under the approved verification policy; on verification, the backend atomically creates one linked OPEN AccidentIncident, then creates an incident-linked request for the designated Hospital.
+- **Alternatives/exceptions:** Candidate remains UNDER_REVIEW if inconclusive or information is insufficient/contradictory; rejected and inconclusive candidates create neither incident nor Hospital request; transaction failure creates neither false verification nor orphan incident; Hospital request failure is recoverable without duplicating the incident.
+- **Postconditions:** Candidate/incident/request links, Police reviewer decision, Hospital response events, time, and audit are preserved. Hospital acknowledgement/availability and simulated dispatch/status are distinct; no real dispatch occurs.
+- **Related requirements:** FR-005, FR-018, FR-019, FR-030, FR-032.
 
 ## UC-04 — Review and update one agency's ResponseAssignment
 
@@ -47,13 +47,14 @@
 - **Main flow:** Actor reviews minimized incident summary and authorized evidence; acknowledges own PENDING assignment; records an independent Response/progress/completion/readiness update; backend validates and audits.
 - **Alternatives/exceptions:** Out-of-scope, stale, or invalid transition is denied; action never mutates another agency's assignment or the incident acknowledgement state.
 - **Postconditions:** AssignmentStatusHistory and Response are attributable; Hospital readiness is not a treatment claim; all prototype activity is simulated.
+- **Workflow boundary:** The owner-approved Hospital request follows Police verification and incident creation. Whether that request is represented by `ResponseAssignment` or another record, and how simulated dispatch statuses map to `Response`, remains unresolved.
 - **Related requirements:** FR-006, FR-011, FR-012, FR-020, FR-021, FR-023.
 
 ## UC-05 — Administer users and oversee incidents
 
 - **Primary actor:** ADMIN.
 - **Preconditions:** Admin authenticated and has the specific permission.
-- **Main flow:** Admin creates/updates/disables users or roles, reviews authorized incident summaries, performs approved verification/assignment actions, and inspects audit history.
+- **Main flow:** Admin creates/updates/disables users or roles and reviews only specifically authorized incident summaries or audit data. Candidate verification or assignment management requires a separate explicit grant; Admin role alone provides neither.
 - **Alternatives/exceptions:** Invalid roles, out-of-policy action, or unauthorized evidence access is denied and recorded as appropriate.
 - **Postconditions:** Changes are persisted by the backend and auditable.
 - **Related requirements:** FR-002, FR-008, FR-013, FR-016.

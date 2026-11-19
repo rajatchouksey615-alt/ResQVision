@@ -1,17 +1,17 @@
 # Incident Response Workflow
 
-**Status:** REVISED_DRAFT — pending team approval; these are logical workflows, not backend contracts.
+**Status:** REVISED_DRAFT — pending team approval; logical workflow sequence is project-owner-approved on 2026-11-19, while detailed scopes and backend contracts remain pending.
 
 ## Candidate Lifecycle
 
 | State | Meaning | Allowed transition and actor |
 |---|---|---|
 | RECEIVED | Backend accepted/associated one or more authenticated DetectionEvents with a candidate | Backend moves to UNDER_REVIEW after intake/provenance checks |
-| UNDER_REVIEW | Authorized human review is pending or in progress | Authorized human reviewer moves to VERIFIED or REJECTED; role/criteria approval pending |
-| VERIFIED | Approved human verification policy is satisfied | Backend transaction creates one linked OPEN AccidentIncident; no direct AI transition |
+| UNDER_REVIEW | Authorized human review is pending or in progress | Specifically authorized human Police reviewer moves to VERIFIED or REJECTED; identity/scope/criteria remain pending |
+| VERIFIED | Approved Police human verification policy is satisfied | Backend transaction creates one linked OPEN AccidentIncident; no direct AI transition; post-commit Hospital request follows |
 | REJECTED | Human reviewer rejected the candidate | Terminal for ordinary workflow; retain per approved audit/evaluation policy |
 
-AI temporal analysis is evidence, not authority. An AI_SERVICE cannot verify/reject a candidate. Multiple DetectionEvents may support one candidate; duplicate event identity is handled idempotently, while distinct-event candidate matching is a separate policy.
+AI temporal analysis is evidence, not authority. An AI_SERVICE cannot verify/reject a candidate. The project owner approved Police-first human verification; only specifically authorized Police reviewers may decide, not every POLICE user. Multiple DetectionEvents may support one candidate; duplicate event identity is handled idempotently, while distinct-event candidate matching is a separate policy. See the [Accident Verification and Emergency Response Governance Workflow](../architecture/domain/accident_verification_emergency_response_workflow.md) for approved scope and remaining decisions.
 
 ~~~mermaid
 stateDiagram-v2
@@ -41,7 +41,7 @@ sequenceDiagram
     participant AI as AI_SERVICE
     participant API as Backend
     participant DB as PostgreSQL
-    actor Reviewer as Authorized human reviewer
+    actor Reviewer as Specifically authorized Police reviewer
     AI->>API: Submit DetectionEvent(s) and evidence references
     API->>API: Authenticate machine identity, validate source/provenance, deduplicate event ID
     API->>DB: Persist each distinct DetectionEvent and create/associate AccidentCandidate
@@ -52,10 +52,11 @@ sequenceDiagram
         API->>DB: Record REJECTED and audit; do not create incident
     else Verified
         API->>DB: Atomic commit: VERIFIED candidate + linked OPEN AccidentIncident + histories/audit
+        API->>DB: After incident commit, create linked request for designated Hospital
     end
 ~~~
 
-If the verification/incident transaction fails, neither a falsely VERIFIED candidate nor an orphan incident is committed. Retrying the same decision must not create a second incident.
+If the verification/incident transaction fails, neither a falsely VERIFIED candidate nor an orphan incident is committed. Retrying the same decision must not create a second incident. An inconclusive review remains `UNDER_REVIEW` and creates neither an incident nor a Hospital request. Hospital target routing and request retry/state contracts remain open.
 
 ## Incident Lifecycle
 
@@ -89,6 +90,8 @@ stateDiagram-v2
 ~~~
 
 The incident lifecycle never uses PENDING, ACKNOWLEDGED, COMPLETED, or other assignment states. Proposed resolution rule: nonterminal assignments must be completed, marked unable, cancelled, or expired under an approved policy before RESOLVED. A documented override requires separate approval. Resolver, closer, reopen, and post-close correction authority remain team decisions. Default behavior is to deny reopening until approved.
+
+The project-owner-approved workflow places the Hospital request after the `OPEN` incident is committed. Hospital acknowledgement and availability/inability are separate from a simulated ambulance-dispatch decision and subsequent simulated response status. No ambulance activity is an `AccidentIncident` state, and no real dispatch occurs. The exact request record, state vocabulary, actor grants, and tracking fields remain pending; see the linked governance workflow.
 
 ## Independent ResponseAssignment Lifecycle
 
@@ -141,6 +144,8 @@ stateDiagram-v2
 Reassignment cancels/supersedes the old assignment and creates a new PENDING record; it never edits away prior status history. Police can update only the Police assignment; Hospital can update only the Hospital assignment. Hospital readiness is not medical treatment, and Police response is not an operational emergency response.
 
 ## Multi-Agency Response
+
+The owner-approved Police-first path creates a post-verification request for the designated Hospital; it does not, by itself, create a Police response assignment. The general independent Police/Hospital assignment concept below remains a separate capability subject to OAD-013/OAD-018 scope and target approvals.
 
 ~~~mermaid
 flowchart TD

@@ -47,7 +47,7 @@ Event-level idempotency and candidate-level duplicate association are separate c
 
 ~~~mermaid
 sequenceDiagram
-    actor Reviewer as Authorized human reviewer
+    actor Reviewer as Specifically authorized Police reviewer
     participant App as Flutter client
     participant API as Backend
     participant DB as PostgreSQL
@@ -65,7 +65,7 @@ sequenceDiagram
     end
 ~~~
 
-The authoritative incident is created by the backend only after authorized human verification. The verification actor/role is pending team approval. Rejected candidates remain distinct for audit/evaluation under the approved retention policy.
+The authoritative incident is created by the backend only after authorized human verification. The project owner approved Police-first review on 2026-11-19; the individual reviewer, source/jurisdiction scope, permitted fields, and decision criteria remain pending. Rejected candidates remain distinct for audit/evaluation under the approved retention policy. See the [Accident Verification and Emergency Response Governance Workflow](domain/accident_verification_emergency_response_workflow.md).
 
 ## End-to-End Multi-Agency Data Flow
 
@@ -75,28 +75,29 @@ sequenceDiagram
     participant AI as AI service
     participant API as Backend
     participant DB as PostgreSQL
-    actor Reviewer as Authorized reviewer
-    actor Police as POLICE user
-    actor Hospital as HOSPITAL user
+    actor Reviewer as Specifically authorized Police reviewer
+    actor Hospital as Authorized designated Hospital user
     Owner->>AI: Supply authorized VideoSource input
     AI->>AI: Validate source; analyze frames and temporal evidence
     AI->>API: Submit machine-authenticated DetectionEvent(s)
     API->>DB: Deduplicate event identity; associate/create AccidentCandidate
-    Reviewer->>API: Verify or reject candidate
+    Reviewer->>API: Review permitted information; verify, reject, or leave inconclusive
     alt Rejected
-        API->>DB: Record REJECTED candidate and audit; no incident
+        API->>DB: Record REJECTED candidate and audit; no incident or Hospital request
+    else Inconclusive
+        API->>DB: Keep candidate UNDER_REVIEW; no incident or Hospital request
     else Verified
-        API->>DB: Atomically create linked OPEN AccidentIncident
-        API->>DB: Create independent Police and/or Hospital assignments
-        API->>Police: Create simulated notification record
-        API->>Hospital: Create simulated notification record
-        Police->>API: Acknowledge/update own assignment
-        Hospital->>API: Independently acknowledge/update own assignment
-        API->>DB: Record separate assignment histories and Responses
+        API->>DB: Atomically record verification and one linked OPEN AccidentIncident
+        API->>DB: Create post-commit Hospital request linked to incident
+        API->>Hospital: Create simulated in-app request notification
+        Hospital->>API: Record acknowledgement and availability or inability
+        Hospital->>API: Record separate simulated ambulance dispatch decision
+        Hospital->>API: Record subsequent simulated response status
+        API->>DB: Append request, Hospital response, and audit histories independently
     end
 ~~~
 
-Assignment state is never copied to the other agency or treated as an incident acknowledgement. Notification state does not drive either assignment. All arrows to Police/Hospital represent prototype simulation only.
+The owner-approved sequence is Police verification, incident creation, then a request to the designated Hospital. The request-to-`ResponseAssignment` mapping and Hospital target routing remain open decisions. Hospital acknowledgement, availability/inability, simulated dispatch decision, and subsequent response status are separate records/meanings; exact state vocabulary is not set here. This specific workflow does not create a Police response assignment. If a separate Police assignment is later approved, it remains independently scoped and cannot mutate Hospital history. No arrow represents a real notification, contact, or dispatch.
 
 ## Evidence Upload Sequence
 

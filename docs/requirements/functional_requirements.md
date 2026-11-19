@@ -1,8 +1,8 @@
 # Functional Requirements
 
-**Status:** REVISED_DRAFT — pending team approval; none of these behaviors is implemented.
+**Status:** REVISED_DRAFT — pending team approval. Some supporting behavior is implemented; the project owner approved the Police-first verification and simulated Hospital response workflow on 2026-11-19, but this does not enable runtime permissions.
 **Priority:** Must = required for the controlled prototype; Should = valuable if feasible; Could = optional.
-**Actor and authority:** Where a reviewer or assignment authority is not yet approved, the requirement records a proposed actor and leaves approval open.
+**Actor and authority:** The project owner approved the specifically authorized human Police reviewer role class and Police-before-Hospital order. Individual reviewer scope, Hospital routing, and other assignment authority remain open and are identified below.
 
 ## FR-001 — Authenticate users
 
@@ -51,13 +51,13 @@
 ## FR-005 — Review AccidentCandidates
 
 - **Description:** Backend shall maintain candidate lifecycle RECEIVED, UNDER_REVIEW, VERIFIED, REJECTED; only an authorized human may decide VERIFIED or REJECTED.
-- **Actor:** AI service supplies evidence; designated human reviewer (role/group TBD; ADMIN proposed) decides.
+- **Actor:** AI service supplies observations; a specifically authorized human Police reviewer decides under the owner-approved workflow. Reviewer identity/group, scope, and decision criteria remain TBD. This is not authority for every `POLICE` user; `ADMIN` is not substituted by default.
 - **Preconditions:** One or more validated DetectionEvents are associated with a candidate; candidate is RECEIVED.
 - **Main flow:** Backend sets UNDER_REVIEW; authorized reviewer examines temporal evidence, uncertainty, source and evidence provenance; reviewer submits decision/rationale; backend authorizes and records it.
 - **Alternative flow:** Insufficient/contradictory evidence remains UNDER_REVIEW; unavailable review capacity does not confirm it; rejected candidate is retained per policy.
 - **Postconditions:** Candidate decision, actor, reason, time, related DetectionEvents, and evidence references are auditable; no incident exists for rejected candidates.
 - **Priority:** Must.
-- **Acceptance criteria:** AI_SERVICE cannot change candidate to VERIFIED/REJECTED; invalid transitions are denied; only authorized human review can decide; reviewer authority and criteria remain open for approval.
+- **Acceptance criteria:** AI_SERVICE cannot change candidate to VERIFIED/REJECTED; invalid transitions are denied; only a specifically authorized Police reviewer in approved scope can decide; reviewer identity, scope, permitted information, and criteria remain open for approval.
 
 ## FR-006 — Manage EvidenceAssets and media lifecycle
 
@@ -204,14 +204,26 @@
 
 ## FR-019 — Create an AccidentIncident after verification
 
-- **Description:** Backend shall create exactly one authoritative AccidentIncident only after an authorized human has verified the linked candidate.
-- **Actor:** Backend service applies an authorized human decision.
+- **Description:** Backend shall create exactly one authoritative AccidentIncident only after a specifically authorized human Police reviewer has verified the linked candidate under the owner-approved workflow.
+- **Actor:** Backend service applies an authorized Police reviewer decision.
 - **Preconditions:** Candidate is UNDER_REVIEW; reviewer identity, scope, evidence, and decision are valid.
 - **Main flow:** Backend transaction records candidate VERIFIED, creates linked incident in OPEN state, appends Candidate/Incident status history and audit event.
 - **Alternative flow:** Rejected candidate creates no incident; transaction failure creates neither a falsely verified candidate nor orphan incident and can be safely retried.
 - **Postconditions:** One incident has provenance to its candidate, source DetectionEvents, location claims, and evidence.
 - **Priority:** Must.
 - **Acceptance criteria:** Incident creation is backend-only and atomic with verification; retries do not create duplicate incidents; actor, reason, and time are retained.
+
+## FR-032 — Create a Hospital response request after Police verification
+
+- **Description:** After a Police-verified candidate has atomically produced one linked `OPEN` AccidentIncident, the backend shall create a response request for the designated Hospital. An authorized Hospital user shall record request acknowledgement and availability or inability to respond, followed by a distinct simulated ambulance-dispatch decision and subsequent simulated response status.
+- **Actor:** Backend creates the incident-linked request; a specifically authorized user in the designated Hospital scope records acknowledgement, availability/inability, and simulated response events.
+- **Preconditions:** Police verification is valid and the linked incident is committed; the target Hospital is designated under an approved routing/eligibility policy.
+- **Main flow:** Backend creates a request traceable to the incident. The Hospital user records acknowledgement and availability or inability. If the Hospital records a dispatch decision, that decision and later response status are stored separately and labeled simulated.
+- **Alternative flow:** Rejected or inconclusive candidates produce no incident or Hospital request. Request failure does not create a duplicate incident or falsely indicate Hospital receipt; retry and failure recovery must be idempotent and auditable. A missing/ineligible target does not trigger arbitrary routing.
+- **Postconditions:** Incident, request, Hospital acknowledgement/availability, simulated dispatch decision, and subsequent response status remain distinct and independently scoped. No real emergency service is contacted.
+- **Priority:** Must for the controlled prototype workflow; exact implementation contract remains pending.
+- **Acceptance criteria:** The project-owner-approved Police-before-Hospital order is enforced; request creation occurs only after incident commit and links to that incident and the designated Hospital; retries do not duplicate requests; only the scoped Hospital user can update its request; acknowledgement is not dispatch confirmation; all dispatch/response labels are simulated; no real Police, Hospital, ambulance, push, or emergency endpoint is called.
+- **Governance note:** Workflow sequence approved by the project owner on 2026-11-19. Reviewer/target identities, routing, exact response states/transitions, field access, and API contracts remain pending under OAD-012/013/018.
 
 ## FR-020 — Create independent assignments for eligible agencies
 

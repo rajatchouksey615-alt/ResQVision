@@ -8,6 +8,14 @@
 
 An `AccidentIncident` is created only when a candidate is verified. It owns incident lifecycle state and `IncidentStatusHistory`. A `ResponseAssignment` owns one target organization's acknowledgement, progress, inability, cancellation, or completion state and `AssignmentStatusHistory`. `Response` records activity, not a second current status. Notification delivery/read is a separate simulation lifecycle.
 
+## Project-Owner-Approved Police-to-Hospital Workflow
+
+The project owner approved on 2026-11-19 that a specifically authorized human Police reviewer verifies a candidate before any Hospital response request is created. On successful verification, the backend atomically creates exactly one `OPEN` incident. Only after that incident is committed does the system create an incident-linked request for the designated Hospital. Rejected or inconclusive candidates create no incident and no Hospital request.
+
+An authorized Hospital user then records request acknowledgement and availability or inability to respond. The Hospital records a separate **simulated** ambulance-dispatch decision and subsequent simulated response status. Acknowledgement is not dispatch confirmation; neither is a real-world outcome. Police and Hospital data and response histories remain independently scoped. The backend remains authoritative for every state change. This flow is documented in the [Accident Verification and Emergency Response Governance Workflow](accident_verification_emergency_response_workflow.md).
+
+The owner-approved sequence does not settle reviewer identities/scopes, Hospital selection/routing, request-to-`ResponseAssignment` mapping, request creation retry/outbox design, the exact availability/dispatch/response state vocabulary, or the users/fields permitted for tracking. It does not grant every Police or Hospital group member access. Keep related routes blocked until those contracts and action-specific grants are recorded. Do not add an incident lifecycle status for ambulance dispatch or infer that Hospital acknowledgement changes incident state. No real notification, Hospital contact, ambulance dispatch, or emergency-service integration is allowed in the academic prototype.
+
 ## Incident Transition Table
 
 | From | To | Trigger/preconditions | Actor authority | Audit/concurrency | Current status |
