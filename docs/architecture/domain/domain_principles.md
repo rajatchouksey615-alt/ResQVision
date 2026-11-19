@@ -1,9 +1,9 @@
-# Phase 5D Domain Principles
+# Domain Principles
 
 **Decision status:** Proposed governance baseline; no business-policy approval is recorded.  
 **Basis:** Requirements and OAD documents are `REVISED_DRAFT`; implementation evidence does not confer approval.
 
-This document converts the principles supplied for Phase 5D into traceable domain and security invariants. `Documented` means present in the draft requirements/design. `Implemented` means code evidence exists. Neither label means a stakeholder approved the policy.
+This document converts the supplied domain principles into traceable domain and security invariants. `Documented` means present in the draft requirements/design. `Implemented` means code evidence exists. Neither label means a stakeholder approved the policy.
 
 ## Domain and Security Invariants
 

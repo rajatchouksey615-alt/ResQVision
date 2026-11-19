@@ -1,10 +1,10 @@
-# Architecture Decision Resolution Register — Phase 5D Addendum
+# Domain Governance Decision Register
 
 **Status:** Proposed recommendation addendum; no OAD status is changed.  
 **Register source:** [Open Architecture Decisions](../open_architecture_decisions.md), marked `REVISED_DRAFT — pending team approval`. Existing owner labels remain placeholders.  
-**ADR status:** `docs/decisions/README.md` states that no ADRs have been approved.
+**ADR status:** The [ADR index](../../decisions/README.md) states that no ADRs have been approved.
 
-This addendum reconciles Phase 5D governance with existing OADs. It is not a replacement register, does not create new OAD identifiers, and does not treat implementation as approval. Keep historical OAD wording/rationale intact; if accepted, record a dated amendment or a new ADR using the existing process.
+This register reconciles domain governance recommendations with existing OADs. It is not a replacement register, does not create new OAD identifiers, and does not treat implementation as approval. Keep historical OAD wording/rationale intact; if accepted, record a dated amendment or a new ADR using the existing process.
 
 ## Decision Records
 

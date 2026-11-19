@@ -1,6 +1,6 @@
 # Component Architecture
 
-**Status:** REVISED_DRAFT — pending team approval; Phase 3 internal Django domain services are implemented, while API and external integration layers are not.
+**Documentation status:** REVISED_DRAFT — pending team approval. Internal Django domain services, selected authenticated REST endpoints, and the Flutter incident read experience are implemented. Candidate, evidence, location, and incident-lifecycle routes remain policy-blocked; external production integrations are not enabled.
 
 ## Component Relationship
 

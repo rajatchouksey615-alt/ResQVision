@@ -1,4 +1,4 @@
-# Phase 5D Architecture Decision Resolution Report
+# Domain Governance and Architecture Decision Resolution
 
 Domain Governance and Policy Review
 
@@ -12,23 +12,23 @@ ResQVision already has a useful separation between AI observations, candidates, 
 
 The governance baseline is not approved. The SRS, requirements, workflows, role-permission matrix, architecture, and OAD register are marked `REVISED_DRAFT` or proposed. Existing code is evidence of current behavior, not evidence that the team or an agency approved that behavior. No candidate-review, verification, incident-resolution, evidence-access, or location-access permission is treated as approved here.
 
-The main recommendation is to keep privileged operations unavailable until named decision owners approve the authority and scope policies recorded below. Preserve the existing fail-closed behavior while those decisions are pending. The report and seven supporting policy/register documents form the Phase 5D decision package.
+The main recommendation is to keep privileged operations unavailable until named decision owners approve the authority and scope policies recorded below. Preserve the existing fail-closed behavior while those decisions are pending. This overview and its supporting policy and register documents form the domain governance package.
 
 ## Repository Audit
 
-The audit inspected the requirements set (SRS, FRs, NFRs, use cases, role-permission matrix, and RTM), architecture and data-flow documents, conceptual ERD and data dictionary, schema constraints, transaction and retention designs, workflow documents, OAD-001 through OAD-021, the Phase 5D incident-management report, API authorization documentation, and the related Django models, services, policies, selectors, serializers, routes, audit services, and tests.
+The audit inspected the requirements set (SRS, FRs, NFRs, use cases, role-permission matrix, and RTM), architecture and data-flow documents, conceptual ERD and data dictionary, schema constraints, transaction and retention designs, workflow documents, OAD-001 through OAD-021, the historical [incident management engineering report](../../incident_management/incident_management_report.md), API authorization documentation, and the related Django models, services, policies, selectors, serializers, routes, audit services, and tests.
 
 Relevant implementation areas include `backend/apps/incidents`, `backend/apps/detection`, `backend/apps/evidence`, `backend/apps/locations`, `backend/apps/responses`, `backend/apps/organizations`, `backend/apps/audit`, and `backend/api/v1`. The repository contains an incident/candidate workflow, but does not contain separate approved evidence-access or location-provenance workflow documents. Retention durations and legal-hold rules remain TBD.
 
 Relevant tests inspected include `backend/tests/test_domain_services.py` (candidate verification atomicity/idempotency and concurrency, resolution/closure policy, independent assignments, evidence validation/expiry, location correction and camera separation), domain model tests under `backend/apps/*/tests/`, and `backend/api/tests/test_api.py` (assignment scope, safe 404 concealment, policy-blocked 503 behavior, and machine-auth fail-closed behavior). These test files were reviewed as implementation evidence but were not executed for this documentation task.
 
-The architecture README and system/component architecture headers previously stated that no services or APIs were implemented. That statement conflicted with the current Django domain services, selected REST endpoints, and Flutter incident read experience. Their status lines were corrected to describe the current implementation while retaining the draft approval status and distinguishing disabled authority-gated routes from unconfigured production integrations. The Phase 1 SRS continues to describe itself as a planning baseline, which is appropriate for that document.
+The architecture README and system/component architecture headers previously stated that no services or APIs were implemented. That statement conflicted with the current Django domain services, selected REST endpoints, and Flutter incident read experience. Their status lines were corrected to describe the current implementation while retaining the draft approval status and distinguishing disabled authority-gated routes from unconfigured production integrations. The SRS correctly describes itself as a planning baseline.
 
 ### Existing OAD Findings
 
 The [existing OAD register](../open_architecture_decisions.md) is a revised draft. Its decision owners are placeholders. This addendum preserves its historical entries and does not mark any OAD approved.
 
-| Existing OAD | Phase 5D finding | Recommended disposition |
+| Existing OAD | Governance finding | Recommended disposition |
 |---|---|---|
 | OAD-001, OAD-020 | Map provider, display precision, location authority, and correction access remain open. Location model/service support exists, but API reads are disabled. | Keep provider and access decisions unresolved; approve provenance and correction authorities before enabling location endpoints. |
 | OAD-002, OAD-014, OAD-016 | Storage provider, media transfer, and retention durations remain undecided. Evidence metadata models exist; no configured provider/verifier enables a usable upload or retrieval workflow. | Keep media private, but defer vendor, transfer contract, retention periods, deletion authority, and legal holds to explicit approval. |
@@ -38,11 +38,11 @@ The [existing OAD register](../open_architecture_decisions.md) is a revised draf
 | OAD-017 | AI_SERVICE is a distinct machine actor, but the configured authenticator is absent and intake fails closed. | Keep machine and human identity separate; select and configure the mechanism only after security approval. |
 | OAD-019 | Source management authority and input mode remain proposed. | Keep source ownership/consent and registration authority unresolved. |
 
-No separate ADR has been approved ([ADR index](../../decisions/README.md)). The [decision register addendum](decision_register.md) maps proposed dispositions to existing OAD identifiers without creating new OAD numbers.
+No separate ADR has been approved ([ADR index](../../decisions/README.md)). The [domain governance decision register](../decisions/domain_governance_decision_register.md) maps proposed dispositions to existing OAD identifiers without creating new OAD numbers.
 
 ## Domain Principles
 
-The complete principle set and implementation evidence are in [Phase 5D Domain Principles](domain_principles.md). The controlling boundaries are:
+The complete principle set and implementation evidence are in [Domain Principles](domain_principles.md). The controlling boundaries are:
 
 - A `DetectionEvent` is an observation, an `AccidentCandidate` is a review subject, and an `AccidentIncident` is authoritative only after an authorized human verification decision.
 - The backend owns identities, authorization, state transitions, and audit. A Flutter role label or UI control cannot grant access.
@@ -84,17 +84,17 @@ Incident lifecycle is a separate aggregate: an agency action can cause the incid
 
 The recommended baseline is restricted, private media with separately scoped metadata visibility and media retrieval. Require current backend authorization, `AVAILABLE` asset state, integrity/validation, and a per-object access check for every read. Never expose a public bucket, permanent URL, storage credential, or unrestricted object key. Audit successful and denied sensitive access without logging media or credentials. Keep Police and Hospital scopes independent and disclose only approved, minimum-necessary fields.
 
-The repository models `EvidenceAsset`, `EvidenceAssociation`, and upload sessions, including checksum, scan, and lifecycle fields. There is no configured object-storage verifier/provider for an end-to-end workflow; evidence list/detail and upload-session API routes are blocked. Role-specific metadata fields, media access, sharing, retention, legal holds, deletion approvers, and provider choice remain unresolved. Details are in [Evidence Governance Policy](evidence_governance_policy.md).
+The repository models `EvidenceAsset`, `EvidenceAssociation`, and upload sessions, including checksum, scan, and lifecycle fields. There is no configured object-storage verifier/provider for an end-to-end workflow; evidence list/detail and upload-session API routes are blocked. Role-specific metadata fields, media access, sharing, retention, legal holds, deletion approvers, and provider choice remain unresolved. Details are in [Evidence Governance Policy](../evidence/evidence_governance_policy.md).
 
 ## Location Provenance
 
 The repository distinguishes `CAMERA_POSITION` from `ACCIDENT_LOCATION`; it records source method (`CAMERA`, `GPS`, `INFERRED`, `MANUAL`), optional capture time and accuracy, verification status, and source event/video references. AI_SERVICE may create only an inferred candidate-level accident-location claim. Human create, verify, correct, and read operations require policies. Correction history records prior/new coordinates, accuracy, actor, time, and rationale, while the current row is updated.
 
-Important gaps: externally reported location is not a distinct source method; the model has one current claim per typed subject; there is no policy/API for competing claims or conflict resolution; precise display scope is undecided; and the location API returns 503. OAD-020 and OAD-001 remain open. See [Location Provenance Policy](location_provenance_policy.md).
+Important gaps: externally reported location is not a distinct source method; the model has one current claim per typed subject; there is no policy/API for competing claims or conflict resolution; precise display scope is undecided; and the location API returns 503. OAD-020 and OAD-001 remain open. See [Location Provenance Policy](../location/location_provenance_policy.md).
 
 ## Authorization Matrix
 
-The [Authorization Matrix](authorization_matrix.md) lists all requested actions by principal, with resource scope, preconditions, evidence, recommended permission, current implementation, status, and approver. Its key conclusion is that no candidate, verification, incident closure, evidence, or location access permission is approved by current repository artifacts. Existing code paths that work are labeled implementation evidence only.
+The [Authorization Matrix](../security/authorization_matrix.md) lists all requested actions by principal, with resource scope, preconditions, evidence, recommended permission, current implementation, status, and approver. Its key conclusion is that no candidate, verification, incident closure, evidence, or location access permission is approved by current repository artifacts. Existing code paths that work are labeled implementation evidence only.
 
 ## Audit and Security Requirements
 
@@ -104,7 +104,7 @@ The audit service allow-lists action codes and context keys. Candidate verificat
 
 ## Decision Register
 
-The [Phase 5D Decision Register Addendum](decision_register.md) captures existing OAD status, options, recommendations, rationale, approval owner class, related requirements/modules, security/domain implications, and implementation impact. OADs are not rewritten or silently approved. No OAD owner is invented; unresolved owners remain the placeholders in the existing register.
+The [Domain Governance Decision Register](../decisions/domain_governance_decision_register.md) captures existing OAD status, options, recommendations, rationale, approval owner class, related requirements/modules, security/domain implications, and implementation impact. OADs are not rewritten or silently approved. No OAD owner is invented; unresolved owners remain the placeholders in the existing register.
 
 ## Stakeholder Approvals Required
 
@@ -135,24 +135,24 @@ The following are current implementation facts, not policy approvals: human JWT 
 
 **Policy readiness: not ready for privileged workflow implementation.** Preserve fail-closed API behavior until approvals are recorded. Noncontroversial engineering safeguards can be planned, but any new permission or workflow must cite the resulting approval and, where required, a separately approved ADR.
 
-Approval, backend policy/API contracts, transaction/concurrency tests, storage and retention design, Flutter workflows, and deployment review are sequenced in [Phase 5D Implementation Readiness](implementation_readiness.md). This package itself does not implement those items or run tests.
+Approval, backend policy/API contracts, transaction/concurrency tests, storage and retention design, Flutter workflows, and deployment review are sequenced in [Incident Management Implementation Readiness](implementation_readiness.md). This package itself does not implement those items or run tests.
 
 ## Documents Created or Updated
 
-Created under `docs/architecture/phase5d/`:
+The governance documentation is organized under `docs/architecture/`:
 
-- [Phase 5D Domain Principles](domain_principles.md)
+- [Domain Principles](domain_principles.md)
 - [Candidate Review and Verification Policy](candidate_review_verification_policy.md)
 - [Incident Lifecycle Policy](incident_lifecycle_policy.md)
-- [Evidence Governance Policy](evidence_governance_policy.md)
-- [Location Provenance Policy](location_provenance_policy.md)
-- [Authorization Matrix](authorization_matrix.md)
-- [Architecture Decision Resolution Register Addendum](decision_register.md)
-- [Phase 5D Implementation Readiness](implementation_readiness.md)
+- [Evidence Governance Policy](../evidence/evidence_governance_policy.md)
+- [Location Provenance Policy](../location/location_provenance_policy.md)
+- [Authorization Matrix](../security/authorization_matrix.md)
+- [Domain Governance Decision Register](../decisions/domain_governance_decision_register.md)
+- [Incident Management Implementation Readiness](implementation_readiness.md)
 - This architecture decision resolution report.
 
 Updated for current implementation accuracy and discoverability: `docs/architecture/README.md`, `docs/architecture/system_architecture.md`, `docs/architecture/component_architecture.md`, and the addendum link in `docs/architecture/open_architecture_decisions.md`. Existing OAD decisions and statuses remain unchanged.
 
 ## Git Diff Summary
 
-The worktree was clean at audit start. This change adds the Phase 5D decision package and updates architecture documentation status/navigation only. No backend, Flutter, API, permission, model, migration, or test file was changed. No tests were run because this request is an architecture/documentation audit. No commit or push was made.
+The original governance audit began with a clean worktree. The permanent governance documents are now organized by domain under `docs/architecture/`, while the milestone-specific engineering report is retained under `docs/incident_management/`. This restructuring corrects titles and documentation links only. No backend, Flutter, API, permission, model, migration, or test file was changed. No tests were run. No commit or push was made.

@@ -1,6 +1,6 @@
 # System Architecture
 
-**Status:** REVISED_DRAFT — pending team approval. No services or production integrations are implemented.
+**Documentation status:** REVISED_DRAFT — pending team approval. Internal Django domain services, selected authenticated REST endpoints, and the Flutter incident read experience are implemented. Production storage, maps, live notifications, and emergency-service integrations are not enabled; several authority-gated routes remain blocked.
 
 ## Architecture Goals
 

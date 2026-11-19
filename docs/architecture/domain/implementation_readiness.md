@@ -1,4 +1,4 @@
-# Phase 5D Implementation Readiness
+# Incident Management Implementation Readiness
 
 **Readiness:** Policy decisions are not ready for privileged workflow implementation.  
 **Report status:** `PARTIALLY_RESOLVED`; this document is an approval gate and sequencing proposal, not authorization to change runtime permissions.
@@ -63,4 +63,4 @@ These are future acceptance criteria. No tests were run for this documentation-o
 - OAD-021 blocks expiry behavior; the model enum alone does not provide a transition.
 - Current requirements and OAD documents are still revised drafts; approval records are absent.
 
-Until those blockers are resolved, Phase 5D remains partial and privileged workflows are not ready to enable.
+Until those blockers are resolved, incident management policy readiness remains partial and privileged workflows are not ready to enable.

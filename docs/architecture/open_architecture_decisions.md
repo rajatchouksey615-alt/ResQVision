@@ -34,3 +34,7 @@
 ## Review Process
 
 For every decision, name an owner, compare credible options, record security/privacy and maintenance consequences, identify dependencies, and create an ADR when accepted. The owner labels above are placeholders, not named assignments. Do not treat this register or the planned technology stack as provider approval.
+
+## Domain Governance Review Addendum
+
+The [domain governance and architecture decision resolution overview](domain/governance_overview.md) and its [domain governance decision register](decisions/domain_governance_decision_register.md) reconcile implementation evidence with these open decisions. They preserve the existing OAD identifiers and statuses; no recommendation in the addendum is an approval or a replacement for a recorded ADR.

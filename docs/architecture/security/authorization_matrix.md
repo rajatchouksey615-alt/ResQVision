@@ -1,4 +1,4 @@
-# Phase 5D Authorization Matrix
+# Authorization Matrix
 
 **Decision status:** Recommendations only; no unresolved permission is granted by this matrix.  
 **Runtime statuses:** `ENABLED` = an implementation path is available today; `BLOCKED` = route/service fails closed or no route exists; `PARTIAL` = supporting model/service exists but policy/contract is unavailable.  
@@ -20,7 +20,7 @@
 | POLICE | Verify/reject candidate | No default scope. | Role matrix says no unless separately approved. | No by default. | API blocked. | UNRESOLVED | Project team and Police representative if proposed. |
 | HOSPITAL | Verify/reject candidate | No default scope. | Role matrix says no unless separately approved. | No by default. | API blocked. | UNRESOLVED | Project team and Hospital representative if proposed. |
 | AI_SERVICE | Verify/reject/dismiss | None. | FR-005; NFR-021. | Prohibited. `DISMISSED` is not a supported state. | No machine command; candidate state enum has only VERIFIED/REJECTED finals. | NOT_APPLICABLE | None for prohibition. |
-| ADMIN | View verified incident | Only if the user has an active matching Police/Hospital membership and in-scope assignment. | Authorization contract; phase 5D report; no Admin global scope. | Same least-privilege object scope; any broader oversight needs a separate policy. | Incident selector filters through visible active assignments; out-of-scope is 404. | PROPOSED | Team must ratify scope. |
+| ADMIN | View verified incident | Only if the user has an active matching Police/Hospital membership and in-scope assignment. | Authorization contract; [historical incident management report](../../incident_management/incident_management_report.md); no Admin global scope. | Same least-privilege object scope; any broader oversight needs a separate policy. | Incident selector filters through visible active assignments; out-of-scope is 404. | PROPOSED | Team must ratify scope. |
 | POLICE | View verified incident | Incident must have a visible Police-target assignment and active matching Police membership/organization. | FR-008/011; authorization contract. | Assigned Police target only, minimum approved incident fields. | Enabled scoped incident read. | PROPOSED | Project team and Police representative for field scope. |
 | HOSPITAL | View verified incident | Incident must have a visible Hospital-target assignment and active matching Hospital membership/organization. | FR-012; authorization contract. | Assigned Hospital target only, minimum necessary details. | Enabled scoped incident read. | PROPOSED | Project team and Hospital representative for field scope. |
 | AI_SERVICE | View incident | None. | NFR-021. | No human incident reads. | No incident route for machine. | NOT_APPLICABLE | None. |

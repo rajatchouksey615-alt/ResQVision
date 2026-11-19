@@ -90,7 +90,7 @@ The incident-management screen explains that candidate queue, detail, and review
 - `mobile_app/lib/features/incidents/presentation/incident_detail_screen.dart`
 - `mobile_app/test/unit/incident_repository_test.dart`
 - `mobile_app/test/widget/incident_management_widget_test.dart`
-- `docs/phase5d_incident_management_report.md`
+- `docs/incident_management/incident_management_report.md`
 
 ## 14. Files Modified
 
