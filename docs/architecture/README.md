@@ -13,5 +13,6 @@
 - [Open architecture decisions](open_architecture_decisions.md): unresolved options and trade-offs.
 - [Domain governance and decision resolution](domain/governance_overview.md): repository audit, proposed domain policies, authorization matrix, OAD reconciliation, and implementation readiness.
 - [Accident verification and emergency response governance workflow](domain/accident_verification_emergency_response_workflow.md): project-owner-approved Police-first verification and simulated Hospital response sequence, with pending policy boundaries, Phase 5E proposal, and acceptance criteria.
+- [Police candidate review architecture blueprint](domain/police_candidate_review_architecture_blueprint.md): current implementation assessment, candidate authorization and verification design, consistency controls, Flutter integration, unresolved approvals, and Phase 5E completion criteria.
 
 Record accepted significant choices as [architecture decision records](../decisions/README.md) using the ADR template. A planned choice is not an implementation claim.
