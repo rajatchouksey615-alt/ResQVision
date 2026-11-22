@@ -44,6 +44,13 @@ class VideoSource(UUIDPrimaryKeyModel):
         blank=True,
         related_name="video_sources",
     )
+    designated_police_organization = models.ForeignKey(
+        Organization,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="routed_video_sources",
+    )
     owner_external_ref = models.CharField(max_length=128, null=True, blank=True)
     authorization_status = models.CharField(
         max_length=20,

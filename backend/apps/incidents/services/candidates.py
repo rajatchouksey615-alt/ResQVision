@@ -18,6 +18,7 @@ from apps.incidents.models import (
     IncidentStatusHistory,
     ReviewDecision,
 )
+from apps.organizations.models import Organization, OrganizationKind
 from apps.sources.models import (
     VideoSourceAuthorizationStatus,
     VideoSourceAvailabilityStatus,
@@ -86,7 +87,28 @@ def create_candidate(
             )
             if existing_link is not None:
                 return existing_link.candidate
-            candidate = AccidentCandidate.objects.create(status=CandidateStatus.RECEIVED)
+            police_organization_id = source.designated_police_organization_id
+            if police_organization_id is None:
+                raise AuthorizationDenied(
+                    "The event source has no designated Police organization."
+                )
+            police_organization = (
+                Organization.objects.select_for_update()
+                .filter(pk=police_organization_id)
+                .first()
+            )
+            if (
+                police_organization is None
+                or not police_organization.is_active
+                or police_organization.organization_kind != OrganizationKind.POLICE
+            ):
+                raise AuthorizationDenied(
+                    "The event source does not resolve to an active Police organization."
+                )
+            candidate = AccidentCandidate.objects.create(
+                status=CandidateStatus.RECEIVED,
+                police_organization=police_organization,
+            )
             CandidateDetectionEvent.objects.create(
                 candidate=candidate,
                 detection_event=event,
@@ -98,7 +120,11 @@ def create_candidate(
                 action="CANDIDATE_CREATED",
                 resource_type="CANDIDATE",
                 resource_id=candidate.pk,
-                safe_context={"event_id": event.pk, "source_id": event.video_source_id},
+                safe_context={
+                    "event_id": event.pk,
+                    "source_id": event.video_source_id,
+                    "organization_id": police_organization.pk,
+                },
             )
             return candidate
     except (

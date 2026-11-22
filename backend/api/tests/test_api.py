@@ -14,7 +14,7 @@ from apps.audit.models import AuditEvent
 from apps.detection.models import DetectionEvent
 from apps.incidents.models import AccidentCandidate, AccidentIncident
 from apps.notifications.models import Notification, NotificationStatus
-from apps.organizations.models import MembershipStatus, OrganizationMembership
+from apps.organizations.models import MembershipStatus, Organization, OrganizationMembership
 from apps.responses.models import AssignmentStatus, Response
 from apps.responses.services import create_assignment
 from apps.sources.models import VideoSourceAuthorizationStatus
@@ -407,6 +407,7 @@ def test_test_machine_authenticator_is_explicit_and_never_proves_identity_from_b
         "detected_at": timezone.now().isoformat(),
         "processing_outcome": "OBSERVATION",
         "service_ref": "CALLER_CONTROLLED_VALUE",
+        "police_organization_id": str(uuid4()),
     }
     client = APIClient()
     machine_token = f"test-{uuid4().hex}"
@@ -455,7 +456,17 @@ def test_test_machine_authenticator_is_explicit_and_never_proves_identity_from_b
 
 
 @pytest.mark.django_db
-def test_unapproved_authority_endpoints_fail_closed_without_resource_disclosure(user, candidate):
+def test_unapproved_authority_endpoints_fail_closed_without_resource_disclosure(
+    user, candidate, police_organization
+):
+    candidate.police_organization = police_organization
+    candidate.save(update_fields=["police_organization", "updated_at"])
+    other_police_organization = Organization.objects.create(
+        code="other-police",
+        display_name="Other Police",
+        organization_kind="POLICE",
+    )
+    add_membership(user, other_police_organization)
     client, _ = make_client_with_token(user)
     existing = client.get(f"/api/v1/candidates/{candidate.pk}/")
     missing = client.get(f"/api/v1/candidates/{uuid4()}/")

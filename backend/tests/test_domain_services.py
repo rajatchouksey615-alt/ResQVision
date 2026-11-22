@@ -166,6 +166,7 @@ def make_event(source: VideoSource, external_id: str) -> DetectionEvent:
 
 def candidate_from_event(source: VideoSource, user, external_id="candidate-event"):
     authorize_fixture_source(source, user)
+    route_fixture_source(source)
     event = make_event(source, external_id)
     candidate = create_candidate(
         detection_event_id=event.pk,
@@ -190,6 +191,17 @@ def new_organization(*, code: str, kind: str) -> Organization:
         display_name=code.replace("-", " ").title(),
         organization_kind=kind,
     )
+
+
+def route_fixture_source(
+    source: VideoSource, organization: Organization | None = None
+) -> Organization:
+    organization = organization or new_organization(
+        code="candidate-routing-police", kind=Organization.Kind.POLICE
+    )
+    source.designated_police_organization = organization
+    source.save(update_fields=["designated_police_organization", "updated_at"])
+    return organization
 
 
 @pytest.mark.django_db
@@ -228,6 +240,7 @@ def test_ai_event_ingestion_denies_unapproved_source_and_records_denial(video_so
 @pytest.mark.django_db
 def test_candidate_creation_enforces_policy_for_machine_and_human_actors(video_source, user):
     source = authorize_fixture_source(video_source, user)
+    route_fixture_source(source)
     machine_event = make_event(source, "candidate-authorized-machine")
     machine = MachineActor("AI_SERVICE")
     machine_policy = RecordingPolicy("candidate.create")
@@ -328,6 +341,7 @@ def test_candidate_creation_requires_an_existing_detection_event(video_source):
 @pytest.mark.django_db
 def test_candidate_creation_rolls_back_when_success_audit_fails(video_source, user):
     source = authorize_fixture_source(video_source, user)
+    route_fixture_source(source)
     event = make_event(source, "candidate-audit-rollback")
 
     with patch(
@@ -349,6 +363,7 @@ def test_candidate_creation_rolls_back_when_success_audit_fails(video_source, us
 @pytest.mark.django_db(transaction=True)
 def test_concurrent_candidate_creation_for_one_event_is_idempotent(video_source, user):
     source = authorize_fixture_source(video_source, user)
+    route_fixture_source(source)
     event = make_event(source, "concurrent-candidate-create")
     event_id = event.pk
     gate = Barrier(2)
@@ -377,6 +392,7 @@ def test_concurrent_candidate_creation_for_one_event_is_idempotent(video_source,
 @pytest.mark.django_db
 def test_ai_service_cannot_verify_candidate_or_create_incident(video_source, user):
     source = authorize_fixture_source(video_source, user)
+    route_fixture_source(source)
     event = make_event(source, "candidate-ai-cannot-verify")
     candidate = create_candidate(
         detection_event_id=event.pk,
@@ -399,6 +415,7 @@ def test_ai_service_cannot_verify_candidate_or_create_incident(video_source, use
 @pytest.mark.django_db
 def test_candidate_creation_association_review_and_default_deny(video_source, user):
     source = authorize_fixture_source(video_source, user)
+    route_fixture_source(source)
     first = make_event(source, "candidate-first-event")
     candidate = create_candidate(
         detection_event_id=first.pk,

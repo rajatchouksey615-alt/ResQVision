@@ -12,6 +12,7 @@ from django.db import connection, transaction
 
 from apps.accounts.models import User
 from apps.audit.models import AuditEvent
+from apps.audit.services import record_successful_action
 from apps.detection.models import DetectionEvent, EventProcessingOutcome
 from apps.detection.services import DetectionEventCommand, ingest_detection_event
 from apps.incidents.models import (
@@ -353,6 +354,7 @@ class Command(BaseCommand):
             or source.owner_organization_id != organizations["SOURCE_OWNER"].pk
             or source.processing_policy_ref != "local-test-only-processing-v1"
             or source.retention_policy_ref != "local-test-only-retention-v1"
+            or source.designated_police_organization_id != organizations["POLICE"].pk
             or source.authorization_status != VideoSourceAuthorizationStatus.AUTHORIZED
             or source.authorized_by_user_id != admin.pk
             or source.authorized_at is None
@@ -369,6 +371,11 @@ class Command(BaseCommand):
         )
         self._require_fixture_audit(
             action="VIDEO_SOURCE_AUTHORIZED",
+            resource_type="VIDEO_SOURCE",
+            resource_id=source.pk,
+        )
+        self._require_fixture_audit(
+            action="VIDEO_SOURCE_POLICE_ROUTE_CONFIGURED",
             resource_type="VIDEO_SOURCE",
             resource_id=source.pk,
         )
@@ -418,7 +425,11 @@ class Command(BaseCommand):
             if len(links) != 1:
                 raise CommandError("An existing fixture event has missing or duplicate linkage.")
             candidate = AccidentCandidate.objects.filter(pk=links[0].candidate_id).first()
-            if candidate is None or candidate.status != CandidateStatus.VERIFIED:
+            if (
+                candidate is None
+                or candidate.status != CandidateStatus.VERIFIED
+                or candidate.police_organization_id != organizations["POLICE"].pk
+            ):
                 raise CommandError("An existing fixture candidate is not verified.")
             self._require_fixture_audit(
                 action="CANDIDATE_CREATED",
@@ -806,6 +817,15 @@ class Command(BaseCommand):
                 authorization_reference=FIXTURE_SOURCE_AUTHORIZATION_REFERENCE,
                 policy=policy,
             )
+            source.designated_police_organization = organizations["POLICE"]
+            source.save(update_fields=["designated_police_organization", "updated_at"])
+            record_successful_action(
+                actor=actor,
+                action="VIDEO_SOURCE_POLICE_ROUTE_CONFIGURED",
+                resource_type="VIDEO_SOURCE",
+                resource_id=source.pk,
+                safe_context={"organization_id": organizations["POLICE"].pk},
+            )
             source.availability_status = VideoSourceAvailabilityStatus.AVAILABLE
             source.save(update_fields=["availability_status", "updated_at"])
         elif (
@@ -816,6 +836,7 @@ class Command(BaseCommand):
             or source.authorization_status != VideoSourceAuthorizationStatus.AUTHORIZED
             or source.availability_status != VideoSourceAvailabilityStatus.AVAILABLE
             or source.authorized_by_user_id != admin.pk
+            or source.designated_police_organization_id != organizations["POLICE"].pk
         ):
             raise CommandError("The reserved test source exists with unexpected state.")
 

@@ -6,6 +6,7 @@ from django.db.models import F, Q
 from django.utils import timezone
 
 from apps.detection.models import DetectionEvent
+from apps.organizations.models import Organization
 from common.models import AppendOnlyUUIDModel, UUIDPrimaryKeyModel
 
 
@@ -37,6 +38,13 @@ class IncidentStatus(models.TextChoices):
 class AccidentCandidate(UUIDPrimaryKeyModel):
     Status = CandidateStatus
 
+    police_organization = models.ForeignKey(
+        Organization,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="accident_candidates",
+    )
     status = models.CharField(
         max_length=20,
         choices=CandidateStatus.choices,

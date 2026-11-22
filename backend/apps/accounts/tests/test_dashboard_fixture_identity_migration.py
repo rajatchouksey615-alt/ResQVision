@@ -130,6 +130,7 @@ def _create_fixture_graph():
         source_type="CONTROLLED_FILE",
         availability_status=VideoSourceAvailabilityStatus.AVAILABLE,
         owner_organization=organizations["SOURCE_OWNER"],
+        designated_police_organization=organizations["POLICE"],
         authorization_status="AUTHORIZED",
         authorized_by_user=users["admin"],
         authorized_at=timezone.now(),
@@ -216,6 +217,7 @@ def _relationship_snapshot():
             VideoSource.objects.values_list(
                 "pk",
                 "owner_organization_id",
+                "designated_police_organization_id",
                 "authorized_by_user_id",
                 "authorization_reference",
                 "name",
