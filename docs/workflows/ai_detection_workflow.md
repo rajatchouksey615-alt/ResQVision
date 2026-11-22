@@ -1,35 +1,29 @@
 # AI Detection Workflow
 
-**Status:** REVISED_DRAFT — pending team approval; no detection, source registry, or evidence-transfer implementation exists.
+**Status:** REVISED_DRAFT — pending team approval. The AI event contract, pluggable frame pipeline, local outbox, and Django event-intake adapter are implemented. No trained detector/model, production machine authentication, source registry API, or evidence-transfer implementation is available.
 
 ~~~mermaid
 flowchart TD
-    A[Register VideoSource and owner/policy] --> B{Source authorized?}
-    B -- No --> Z[Reject; audit source denial]
-    B -- Yes --> C[Receive controlled file or approved replaceable stream]
-    C --> D[Validate format, resource limits, source time/location provenance]
-    D --> E[Decode/sample and preprocess frames]
-    E --> F[Detect relevant objects and preserve timing/confidence]
-    F --> G[Track objects where useful]
-    G --> H[Analyze temporal observations]
-    H --> I{Detection observations emitted?}
-    I -- No --> J[Record no-candidate or uncertain processing outcome]
-    I -- Yes --> K[Create distinct DetectionEvent(s)]
-    K --> L[Create EvidenceAsset metadata]
-    L --> M[Request backend-scoped upload authorization]
-    M --> N[Upload one authorized object; report completion]
-    N --> O{Object, metadata, integrity and validation pass?}
-    O -- No --> P[Keep FAILED/QUARANTINED; no retrieval]
-    O -- Yes --> Q[EvidenceAsset AVAILABLE after required validation]
-    Q --> R[Submit authenticated DetectionEvent(s)]
-    R --> S{AI_SERVICE, source, event identity valid?}
-    S -- No --> T[Reject safely; retry same identity only]
-    S -- Yes --> U[Backend persists events and creates/associates AccidentCandidate]
-    U --> V[Candidate RECEIVED then UNDER_REVIEW]
-    V --> W[Authorized human reviewer decides]
-    W --> X{Verified or rejected?}
-    X -- Verified --> Y[Backend creates linked OPEN AccidentIncident]
-    X -- Rejected --> AA[REJECTED candidate retained by policy; no incident]
+    A[Registered VideoSource] --> B{Source authorized and available?}
+    B -- No --> Z[Do not process or accept event]
+    B -- Yes --> C[Receive configured video input]
+    C --> D[Decode bounded UTC-timestamped frames]
+    D --> E[Run explicitly configured detector]
+    E --> F{Detection score meets configured threshold?}
+    F -- No --> G[Continue; no DetectionEvent]
+    F -- Yes --> H[Generate v1 observation and provenance]
+    H --> I[Persist event in local SQLite outbox]
+    I --> J{Approved AI_SERVICE authenticator configured?}
+    J -- No --> K[Remain queued; report not ready]
+    J -- Yes --> L[POST /api/v1/ai/detection-events/]
+    L --> M{Machine identity, source state, and payload valid?}
+    M -- No --> N[Report safe error; retain for bounded retry or operator recovery]
+    M -- Yes --> O[Backend idempotently stores DetectionEvent only]
+    O --> P[Separate backend candidate-intake policy, if approved]
+    P --> Q[Authorized human reviewer decides]
+    Q --> R{Verified or rejected?}
+    R -- Verified --> S[Backend creates linked OPEN AccidentIncident]
+    R -- Rejected --> T[Rejected candidate retained; no incident]
 ~~~
 
 ## Stage Responsibilities
@@ -38,8 +32,8 @@ flowchart TD
 2. **Input:** Support controlled approved files for academic demonstrations. RTSP/stream and camera-health support remain replaceable/open; source credentials stay in protected runtime configuration and never Git.
 3. **Validation/preprocessing:** Validate source authorization, format, resource limits, timestamps, and policy; distinguish unavailable/invalid input from completed analysis with no observation.
 4. **Detection/tracking:** Record each observation with source/event identity, timing, processing provenance, and confidence/uncertainty when available. Tracking is optional and method TBD.
-5. **Event production:** AI creates distinct DetectionEvents. The backend, not the AI service, associates one or more events to a candidate. Same event ID is idempotent; candidate similarity is a separate reviewed rule.
-6. **Evidence authorization:** AI submits DetectionEvent/evidence metadata; the backend associates the event to a candidate, creates a server-controlled EvidenceAsset reference, and grants short-lived, single-object, operation-scoped upload authorization where supported. Backend-mediated upload is fallback.
+5. **Event production and submission:** AI generates a versioned v1 observation with source UUID, external event reference, UTC timestamp, model provenance, detector score, metadata, and payload digest. A SQLite outbox retains events across transport failure. The Django ingestion service requires an authenticated AI_SERVICE actor and a source that is authorized and available. Identical event replays are idempotent; changed content under the same identity is rejected.
+6. **Candidate and evidence boundary:** DetectionEvent intake does not create candidates, select Police organizations/reviewers, verify accidents, create incidents, or submit evidence. Candidate association and evidence transfer require separate approved backend policies and endpoints.
 7. **Evidence validation:** Upload is PENDING_UPLOAD/UPLOADING then QUARANTINED while object identity, allowed type/size, integrity/checksum, and required scan are checked. Only validated asset becomes AVAILABLE; failures remain FAILED/QUARANTINED.
 8. **Human verification:** Candidate states are RECEIVED, UNDER_REVIEW, VERIFIED, REJECTED. Authorized human alone verifies/rejects; AI temporal score is evidence, not authority.
 9. **Incident creation:** Backend atomically creates a linked OPEN AccidentIncident only after authorized candidate verification; rejected candidates create no incident.

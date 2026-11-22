@@ -42,7 +42,7 @@ No response-assignment creation endpoint is exposed. `create_assignment` require
 
 | Method | Path | Access | Current behavior |
 |---|---|---|---|
-| POST | `/ai/detection-events/` | Dedicated AI_SERVICE only | 503 while machine auth is unconfigured under OAD-017; never accepts human JWT as machine identity |
+| POST | `/ai/detection-events/` | Dedicated AI_SERVICE only | v1 contract; 503 while machine auth is unconfigured under OAD-017; source must be authorized and available; intake stores an event only |
 | GET | `/candidates/` | Active assigned Police reviewer | Lists only candidates assigned to the caller in their active Police organization |
 | GET | `/candidates/{candidate_id}/` | Active assigned Police reviewer | Assigned candidate detail; out-of-scope is 404 |
 | POST | `/candidates/{candidate_id}/assignment/` | ADMIN-group user with active membership in the candidate Police organization | Assigns one active same-organization Police reviewer; body has `reviewer_id` and `command_id` |

@@ -26,6 +26,6 @@ Login is limited to 5 attempts/minute per client IP and refresh to 20/minute by 
 
 ## AI_SERVICE Boundary
 
-`POST /api/v1/ai/detection-events/` has a dedicated `AIServiceAuthentication` interface. It does not use the human JWT authenticator and never accepts a `service_ref` from the body or headers as identity proof. The default configuration is unset and responds with `503 machine_authentication_unavailable`.
+`POST /api/v1/ai/detection-events/` accepts the versioned v1 observation contract through a dedicated `AIServiceAuthentication` interface. It does not use the human JWT authenticator and never accepts a `service_ref` from the body or headers as identity proof. The default configuration is unset and responds with `503 machine_authentication_unavailable`. The referenced `VideoSource` must be both `AUTHORIZED` and `AVAILABLE` at ingestion time.
 
-A deliberately test-only authenticator can be injected in test settings. It is disabled when `TESTING` is false. OAD-017 is unresolved, so no production machine credential, shared token, OAuth client, signing key, or mTLS identity is configured. Even with a future authenticator, the route must preserve the domain service's source-authorization and idempotency checks.
+A deliberately test-only authenticator can be injected in test settings. It is disabled when `TESTING` is false. OAD-017 is unresolved, so no production machine credential, shared token, OAuth client, signing key, or mTLS identity is configured. Even with a future authenticator, the route preserves the domain service's source authorization and idempotency checks. Accepted intake stores `DetectionEvent` only; it does not create candidates or alter review/incident state.

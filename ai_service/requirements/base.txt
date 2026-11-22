@@ -1,2 +1,3 @@
-# Placeholder: select and pin core runtime dependencies before implementation.
-# when AI service implementation begins.
+# Core event processing, contract validation, SQLite outbox, and HTTP transport
+# use only the Python standard library.
+# OpenCV/Ultralytics/PyTorch remain optional until the model and runtime are approved.

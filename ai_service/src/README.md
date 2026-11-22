@@ -1,14 +1,13 @@
 # AI Service Source
 
-The source tree is reserved for the future video analysis pipeline. The subdirectories describe responsibilities only; no code or implementation contracts exist yet.
+Python source is under `resqvision_ai/` and is grouped by responsibility:
 
-- core/: service-level configuration and orchestration boundaries.
-- preprocessing/: video and frame input preparation.
-- detection/: object and vehicle detection.
-- tracking/: object tracking.
-- verification/: temporal verification of accident candidates.
-- evidence/: evidence selection and processing.
-- api/: a service API if the reviewed architecture requires one.
-- utils/: small shared utilities used by this service.
+- `video.py`: frame ingestion and timestamps.
+- `detectors.py`: optional model adapters.
+- `pipeline.py`: thresholding and observation event generation.
+- `contracts.py`: v1 payload schema and validation.
+- `client.py`: backend transport and injected machine-authenticator boundary.
+- `outbox.py` and `publisher.py`: durable local retries and recovery.
+- `service.py` and `health.py`: composition and safe readiness reporting.
 
-Keep candidate detection separate from verification. Document interfaces and test important pipeline behavior with controlled, privacy-safe fixtures.
+No trained weights or active detector are included. Keep event intake separate from candidate association and human verification. See the package [README](../README.md) for security and local integration details.

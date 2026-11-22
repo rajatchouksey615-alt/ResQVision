@@ -143,8 +143,9 @@ paths:
   /api/v1/ai/detection-events/:
     post:
       operationId: ai_detection_events_submit
-      description: AI_SERVICE submission only. The route is unavailable until a formally
-        approved machine authenticator and source authorization are configured.
+      description: Version v1 AI_SERVICE observation submission. The route remains unavailable
+        until a formally approved machine authenticator is configured. Every referenced source
+        must be authorized and available. AI events do not create or verify incidents.
       tags:
       - ai
       requestBody:
@@ -2403,6 +2404,10 @@ components:
     DetectionEventInput:
       type: object
       properties:
+        contract_version:
+          type: string
+          enum:
+          - v1
         video_source_id:
           type: string
           format: uuid
@@ -2428,15 +2433,18 @@ components:
         payload_sha256:
           type: string
           nullable: true
-          pattern: ^[0-9a-fA-F]{64}$
+          pattern: ^[0-9a-f]{64}$
         metadata_schema_version:
           type: integer
           minimum: 1
+          maximum: 32767
           default: 1
         auxiliary_metadata:
           type: object
+          description: At most 16 KiB; cannot contain candidate, Police, reviewer, verification, or incident authority fields.
           additionalProperties: {}
       required:
+      - contract_version
       - detected_at
       - external_event_id
       - model_name

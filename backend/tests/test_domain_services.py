@@ -240,6 +240,20 @@ def test_ai_event_ingestion_denies_unapproved_source_and_records_denial(video_so
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("availability", ["UNKNOWN", "DEGRADED", "UNAVAILABLE"])
+def test_ai_event_ingestion_requires_available_source(video_source, user, availability):
+    source = authorize_fixture_source(video_source, user)
+    source.availability_status = availability
+    source.save(update_fields=["availability_status", "updated_at"])
+    command = ai_event_command(source, external_id=f"source-{availability.lower()}")
+
+    with pytest.raises(AuthorizationDenied):
+        ingest_detection_event(command)
+
+    assert not DetectionEvent.objects.filter(video_source=source).exists()
+
+
+@pytest.mark.django_db
 def test_candidate_creation_enforces_policy_for_machine_and_human_actors(video_source, user):
     source = authorize_fixture_source(video_source, user)
     route_fixture_source(source)

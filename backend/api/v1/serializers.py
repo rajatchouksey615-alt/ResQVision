@@ -253,6 +253,7 @@ class IncidentStatusQuerySerializer(serializers.Serializer):
 
 
 class DetectionEventInputSerializer(serializers.Serializer):
+    contract_version = serializers.ChoiceField(choices=("v1",))
     video_source_id = serializers.UUIDField()
     external_event_id = serializers.CharField(max_length=128, trim_whitespace=True)
     model_name = serializers.CharField(max_length=100, trim_whitespace=True)
@@ -262,6 +263,49 @@ class DetectionEventInputSerializer(serializers.Serializer):
     confidence = serializers.DecimalField(
         max_digits=5, decimal_places=4, min_value=0, max_value=1, required=False, allow_null=True
     )
-    payload_sha256 = serializers.RegexField(r"^[0-9a-fA-F]{64}$", required=False, allow_null=True)
-    metadata_schema_version = serializers.IntegerField(min_value=1, default=1)
+    payload_sha256 = serializers.RegexField(r"^[0-9a-f]{64}$", required=False, allow_null=True)
+    metadata_schema_version = serializers.IntegerField(min_value=1, max_value=32767, default=1)
     auxiliary_metadata = serializers.DictField(required=False, default=dict)
+
+    def validate_auxiliary_metadata(self, value):
+        import json
+
+        forbidden = {
+            "candidate_id",
+            "candidate_status",
+            "decision",
+            "incident_id",
+            "incident_status",
+            "police_org_id",
+            "police_organization_id",
+            "review_decision",
+            "reviewer",
+            "reviewer_id",
+            "verification",
+            "verification_status",
+            "verified",
+        }
+
+        pending = [(value, 0)]
+        visited = 0
+        while pending:
+            node, depth = pending.pop()
+            visited += 1
+            if depth > 16 or visited > 4096:
+                raise serializers.ValidationError("Metadata exceeds the v1 complexity limit.")
+            if isinstance(node, dict):
+                for key, nested in node.items():
+                    if str(key).casefold() in forbidden:
+                        raise serializers.ValidationError(
+                            "Metadata cannot include backend authority fields."
+                        )
+                    pending.append((nested, depth + 1))
+            elif isinstance(node, list):
+                pending.extend((nested, depth + 1) for nested in node)
+        try:
+            encoded = json.dumps(value, allow_nan=False, separators=(",", ":"))
+        except (TypeError, ValueError, RecursionError) as exc:
+            raise serializers.ValidationError("Metadata must contain finite JSON values.") from exc
+        if len(encoded.encode("utf-8")) > 16_384:
+            raise serializers.ValidationError("Metadata exceeds the 16 KiB limit.")
+        return value

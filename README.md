@@ -6,7 +6,7 @@
 
 ResQVision is an academic major project exploring how computer vision and coordinated software workflows could help identify potential road accidents from authorized CCTV or video sources. The planned system produces AI DetectionEvents, associates them with AccidentCandidates, creates authoritative AccidentIncidents only after human verification, and presents independently tracked Police and Hospital assignments to authorized users.
 
-The PostgreSQL-backed Django foundation, internal domain services, and versioned human-authenticated API are implemented. The Flutter client supports account sign-in and session handling. Requirements and architecture documents remain a **REVISED_DRAFT pending team approval**. The AI service, approved machine authentication, object storage, and deployment integrations are not configured.
+The PostgreSQL-backed Django foundation, internal domain services, versioned human-authenticated API, and AI event integration boundaries are implemented. The Flutter client supports account sign-in and session handling. Requirements and architecture documents remain a **REVISED_DRAFT pending team approval**. No trained AI model or production machine authentication, object storage, or deployment integration is configured.
 
 ## Problem Statement
 
@@ -37,7 +37,7 @@ The planned system has four main parts:
 
 - **Mobile app:** Flutter and Dart interfaces for Admin, Police, and Hospital users. It will communicate with the backend API and will not access the database directly.
 - **Backend:** Python, Django, Django REST Framework, and PostgreSQL. Database/domain services and the `/api/v1/` transport layer are implemented. Human JWT is configured; operations with unresolved authority remain unavailable. AI machine authentication, external notification delivery, and storage integrations remain unconfigured.
-- **AI service:** Python, YOLO, OpenCV, PyTorch, and NumPy for authorized video processing, object detection/tracking, DetectionEvent generation, temporal analysis, and evidence generation. It cannot verify candidates or create incidents.
+- **AI service:** Python event contracts, a pluggable frame pipeline, durable outbox, and versioned backend client are implemented. OpenCV/Ultralytics adapters require reviewed runtime dependencies and an externally supplied model. It cannot verify candidates or create incidents; production machine authentication remains disabled.
 - **Infrastructure and documentation:** A local PostgreSQL Compose definition and database implementation notes are present. No container or production deployment is running. Technical decisions and workflows are documented under docs.
 
 The intended flow is authorized VideoSource input to AI DetectionEvents, backend candidate association, human verification, and authoritative incident creation. Evidence, incident, each agency assignment, and notification delivery have separate backend-owned lifecycles. Integration contracts and physical implementation details remain to be designed.

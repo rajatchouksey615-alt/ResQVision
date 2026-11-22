@@ -25,6 +25,22 @@ from common.domain.exceptions import (
 )
 from common.domain.policies import AuthorizationPolicy, require_authorized
 
+_FORBIDDEN_EVENT_METADATA_KEYS = {
+    "candidate_id",
+    "candidate_status",
+    "decision",
+    "incident_id",
+    "incident_status",
+    "police_org_id",
+    "police_organization_id",
+    "review_decision",
+    "reviewer",
+    "reviewer_id",
+    "verification",
+    "verification_status",
+    "verified",
+}
+
 
 @dataclass(frozen=True, slots=True)
 class DetectionEventCommand:
@@ -76,6 +92,8 @@ def validate_detection_provenance(command: DetectionEventCommand) -> str:
         raise BusinessRuleViolation("Confidence must be between zero and one.")
     if command.metadata_schema_version < 1:
         raise BusinessRuleViolation("Metadata schema version must be positive.")
+    if command.metadata_schema_version > 32767:
+        raise BusinessRuleViolation("Metadata schema version exceeds the supported range.")
     if command.auxiliary_metadata is not None and not isinstance(command.auxiliary_metadata, dict):
         raise BusinessRuleViolation("Detection metadata must be a JSON object.")
     if command.payload_sha256 is not None and (
@@ -83,10 +101,33 @@ def validate_detection_provenance(command: DetectionEventCommand) -> str:
         or any(character not in "0123456789abcdef" for character in command.payload_sha256)
     ):
         raise BusinessRuleViolation("Payload digest must be a lowercase SHA-256 value.")
+    metadata = command.auxiliary_metadata or {}
+    pending = [(metadata, 0)]
+    visited = 0
+    while pending:
+        node, depth = pending.pop()
+        visited += 1
+        if depth > 16 or visited > 4096:
+            raise BusinessRuleViolation("Detection metadata exceeds the v1 complexity limit.")
+        if isinstance(node, dict):
+            for key, nested in node.items():
+                if not isinstance(key, str):
+                    raise BusinessRuleViolation("Detection metadata keys must be strings.")
+                if key.casefold() in _FORBIDDEN_EVENT_METADATA_KEYS:
+                    raise BusinessRuleViolation(
+                        "Detection metadata cannot carry backend authority fields."
+                    )
+                pending.append((nested, depth + 1))
+        elif isinstance(node, list):
+            pending.extend((nested, depth + 1) for nested in node)
     try:
-        json.dumps(command.auxiliary_metadata or {})
-    except (TypeError, ValueError) as exc:
-        raise BusinessRuleViolation("Detection metadata must be JSON serializable.") from exc
+        encoded_metadata = json.dumps(
+            metadata, allow_nan=False, sort_keys=True, separators=(",", ":")
+        )
+    except TypeError, ValueError, RecursionError:
+        raise BusinessRuleViolation("Detection metadata must be JSON serializable.") from None
+    if len(encoded_metadata.encode("utf-8")) > 16_384:
+        raise BusinessRuleViolation("Detection metadata exceeds the 16 KiB limit.")
     return _semantic_digest(command)
 
 

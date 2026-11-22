@@ -1,2 +1,3 @@
-# Placeholder: select production dependency constraints after the deployment environment is known.
-# selected runtime, model, hardware, and deployment decisions.
+-r base.txt
+# Add reviewed, pinned OpenCV/Ultralytics/PyTorch versions only after selecting
+# the model, supported runtime, deployment hardware, and licensing terms.

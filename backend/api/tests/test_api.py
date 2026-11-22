@@ -21,7 +21,7 @@ from apps.notifications.models import Notification, NotificationStatus
 from apps.organizations.models import MembershipStatus, Organization, OrganizationMembership
 from apps.responses.models import AssignmentStatus, AssignmentStatusHistory, Response
 from apps.responses.services import create_assignment
-from apps.sources.models import VideoSourceAuthorizationStatus
+from apps.sources.models import VideoSourceAuthorizationStatus, VideoSourceAvailabilityStatus
 from common.domain.actors import HumanActor
 
 
@@ -650,12 +650,14 @@ def test_test_machine_authenticator_is_explicit_and_never_proves_identity_from_b
     user, video_source
 ):
     video_source.authorization_status = VideoSourceAuthorizationStatus.AUTHORIZED
+    video_source.availability_status = VideoSourceAvailabilityStatus.AVAILABLE
     video_source.authorized_by_user = user
     video_source.authorized_at = timezone.now()
     video_source.authorization_reference = "test-approved-source"
     video_source.save(
         update_fields=[
             "authorization_status",
+            "availability_status",
             "authorized_by_user",
             "authorized_at",
             "authorization_reference",
@@ -664,6 +666,7 @@ def test_test_machine_authenticator_is_explicit_and_never_proves_identity_from_b
     )
     path = "api.v1.authentication.TestMachineCredentialAuthenticator"
     body = {
+        "contract_version": "v1",
         "video_source_id": str(video_source.pk),
         "external_event_id": "api-machine-event",
         "model_name": "test-detector",
@@ -703,6 +706,28 @@ def test_test_machine_authenticator_is_explicit_and_never_proves_identity_from_b
     event = DetectionEvent.objects.get(external_event_id="api-machine-event")
 
     assert event.service_principal_ref == "AI_SERVICE"
+    with override_settings(
+        AI_SERVICE_AUTHENTICATOR=path,
+        AI_TEST_MACHINE_TOKEN=machine_token,
+    ):
+        replay = client.post(
+            "/api/v1/ai/detection-events/",
+            body,
+            format="json",
+            HTTP_AUTHORIZATION=f"Machine {machine_token}",
+        )
+        conflicted = client.post(
+            "/api/v1/ai/detection-events/",
+            {**body, "model_version": "different-version"},
+            format="json",
+            HTTP_AUTHORIZATION=f"Machine {machine_token}",
+        )
+    assert replay.status_code == 201, replay.content
+    assert replay.json()["id"] == payload["id"]
+    assert conflicted.status_code == 409
+    assert conflicted.json()["code"] == "idempotency_conflict"
+    assert DetectionEvent.objects.filter(external_event_id="api-machine-event").count() == 1
+    assert not event.candidate_link.exists()
 
     with override_settings(
         AI_SERVICE_AUTHENTICATOR=path,
@@ -717,6 +742,96 @@ def test_test_machine_authenticator_is_explicit_and_never_proves_identity_from_b
         )
     assert disabled.status_code == 503
     assert disabled.json()["code"] == "machine_authentication_unavailable"
+
+
+@pytest.mark.django_db
+def test_authenticated_ai_event_cannot_use_unavailable_source(user, video_source):
+    video_source.authorization_status = VideoSourceAuthorizationStatus.AUTHORIZED
+    video_source.authorized_by_user = user
+    video_source.authorized_at = timezone.now()
+    video_source.authorization_reference = "test-approved-but-unavailable"
+    video_source.save(
+        update_fields=[
+            "authorization_status",
+            "authorized_by_user",
+            "authorized_at",
+            "authorization_reference",
+            "updated_at",
+        ]
+    )
+    token = f"test-{uuid4().hex}"
+    client = APIClient()
+    body = {
+        "contract_version": "v1",
+        "video_source_id": str(video_source.pk),
+        "external_event_id": "unavailable-source-event",
+        "model_name": "test-detector",
+        "model_version": "1.0.0",
+        "detected_at": timezone.now().isoformat(),
+        "processing_outcome": "OBSERVATION",
+    }
+
+    with override_settings(
+        AI_SERVICE_AUTHENTICATOR="api.v1.authentication.TestMachineCredentialAuthenticator",
+        AI_TEST_MACHINE_TOKEN=token,
+    ):
+        response = client.post(
+            "/api/v1/ai/detection-events/",
+            body,
+            format="json",
+            HTTP_AUTHORIZATION=f"Machine {token}",
+        )
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "authorization_denied"
+    assert not DetectionEvent.objects.filter(external_event_id="unavailable-source-event").exists()
+
+
+@pytest.mark.django_db
+def test_ai_ingestion_rejects_authority_metadata_and_missing_contract_version(user, video_source):
+    video_source.authorization_status = VideoSourceAuthorizationStatus.AUTHORIZED
+    video_source.availability_status = VideoSourceAvailabilityStatus.AVAILABLE
+    video_source.authorized_by_user = user
+    video_source.authorized_at = timezone.now()
+    video_source.save(
+        update_fields=[
+            "authorization_status",
+            "availability_status",
+            "authorized_by_user",
+            "authorized_at",
+            "updated_at",
+        ]
+    )
+    body = {
+        "contract_version": "v1",
+        "video_source_id": str(video_source.pk),
+        "external_event_id": "authority-metadata-event",
+        "model_name": "test-detector",
+        "model_version": "1.0.0",
+        "detected_at": timezone.now().isoformat(),
+        "processing_outcome": "OBSERVATION",
+        "auxiliary_metadata": {"details": {"verified": True}},
+    }
+    token = f"test-{uuid4().hex}"
+    path = "api.v1.authentication.TestMachineCredentialAuthenticator"
+    client = APIClient()
+    with override_settings(AI_SERVICE_AUTHENTICATOR=path, AI_TEST_MACHINE_TOKEN=token):
+        forbidden = client.post(
+            "/api/v1/ai/detection-events/",
+            body,
+            format="json",
+            HTTP_AUTHORIZATION=f"Machine {token}",
+        )
+        missing_version = client.post(
+            "/api/v1/ai/detection-events/",
+            {key: value for key, value in body.items() if key != "contract_version"},
+            format="json",
+            HTTP_AUTHORIZATION=f"Machine {token}",
+        )
+
+    assert forbidden.status_code == 400
+    assert missing_version.status_code == 400
+    assert DetectionEvent.objects.count() == 0
 
 
 @pytest.mark.django_db

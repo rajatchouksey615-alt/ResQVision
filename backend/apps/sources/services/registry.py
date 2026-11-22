@@ -97,9 +97,9 @@ def validate_source_for_ingestion(source: VideoSource | UUID) -> VideoSource:
             raise ResourceNotFound("Video source was not found.") from exc
     if (
         source.authorization_status != AuthStatus.AUTHORIZED
-        or source.availability_status == AvailabilityStatus.UNAVAILABLE
+        or source.availability_status != AvailabilityStatus.AVAILABLE
     ):
-        raise AuthorizationDenied("The video source is not authorized for ingestion.")
+        raise AuthorizationDenied("The video source is not authorized and available for ingestion.")
     return source
 
 

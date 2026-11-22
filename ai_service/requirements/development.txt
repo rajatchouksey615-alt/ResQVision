@@ -1,2 +1,2 @@
-# Placeholder: select development, evaluation, and test tools before implementation.
-# when AI service implementation begins. Include base requirements then.
+-r base.txt
+# Install pytest and Ruff from the project's approved development environment.

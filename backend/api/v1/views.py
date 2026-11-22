@@ -532,8 +532,9 @@ class DetectionEventSubmissionView(APIView):
         request=DetectionEventInputSerializer,
         responses={201: DetectionEventCreatedSerializer, **API_ERROR_RESPONSES},
         description=(
-            "AI_SERVICE submission only. The route is unavailable until a formally approved "
-            "machine authenticator and source authorization are configured."
+            "Version v1 AI_SERVICE observation submission. The route remains unavailable until "
+            "a formally approved machine authenticator is configured. Every referenced source "
+            "must be authorized and available. AI events do not create or verify incidents."
         ),
     )
     def post(self, request):
