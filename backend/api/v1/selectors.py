@@ -2,10 +2,30 @@
 
 from django.db.models import F
 
-from apps.incidents.models import AccidentIncident
+from apps.incidents.models import AccidentCandidate, AccidentIncident
 from apps.notifications.models import Notification
 from apps.organizations.models import MembershipStatus, OrganizationMembership
 from apps.responses.models import AssignmentStatus, ResponseAssignment
+
+
+def visible_candidate_queryset(user):
+    """Candidates assigned to this active Police member in the bound organization."""
+
+    return (
+        AccidentCandidate.objects.filter(
+            police_organization_id=F("reviewer_assignment__police_organization_id"),
+            reviewer_assignment__reviewer=user,
+            reviewer_assignment__reviewer__is_active=True,
+            reviewer_assignment__police_organization__is_active=True,
+            reviewer_assignment__police_organization__organization_kind="POLICE",
+            reviewer_assignment__police_organization__memberships__user=user,
+            reviewer_assignment__police_organization__memberships__status=MembershipStatus.ACTIVE,
+            reviewer_assignment__police_organization__memberships__role_group__name="POLICE",
+        )
+        .select_related("police_organization", "reviewer_assignment")
+        .distinct()
+        .order_by("-created_at", "pk")
+    )
 
 
 def active_memberships_for(user):

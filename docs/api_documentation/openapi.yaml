@@ -999,22 +999,33 @@ paths:
   /api/v1/candidates/:
     get:
       operationId: candidates_list
-      description: Base for endpoints held behind an unresolved authorization decision.
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
       tags:
       - candidates
       security:
       - jwtAuth: []
       responses:
-        '503':
+        '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorEnvelope'
+                $ref: '#/components/schemas/PaginatedCandidateSummaryList'
           description: ''
   /api/v1/candidates/{candidate_id}/:
     get:
       operationId: candidates_retrieve
-      description: Base for endpoints held behind an unresolved authorization decision.
       parameters:
       - in: path
         name: candidate_id
@@ -1027,6 +1038,141 @@ paths:
       security:
       - jwtAuth: []
       responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateSummary'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '413':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+  /api/v1/candidates/{candidate_id}/assignment/:
+    post:
+      operationId: candidates_assign_reviewer
+      parameters:
+      - in: path
+        name: candidate_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - candidates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CandidateReviewerAssignmentInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CandidateReviewerAssignmentInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CandidateReviewerAssignmentInput'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateReviewerAssignmentCommandResponse'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateReviewerAssignmentCommandResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '413':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
         '503':
           content:
             application/json:
@@ -1736,6 +1882,109 @@ components:
       - last_name
       - memberships
       - roles
+    CandidateReviewerAssignment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        candidate_id:
+          type: string
+          format: uuid
+          readOnly: true
+        police_organization_id:
+          type: string
+          format: uuid
+          readOnly: true
+        reviewer_id:
+          type: string
+          format: uuid
+          readOnly: true
+        assigned_by_user_id:
+          type: string
+          format: uuid
+          readOnly: true
+        command_id:
+          type: string
+          format: uuid
+          readOnly: true
+        assigned_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - assigned_at
+      - assigned_by_user_id
+      - candidate_id
+      - command_id
+      - id
+      - police_organization_id
+      - reviewer_id
+    CandidateReviewerAssignmentCommandResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/CandidateReviewerAssignment'
+        replayed:
+          type: boolean
+      required:
+      - data
+      - replayed
+    CandidateReviewerAssignmentInput:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        reviewer_id:
+          type: string
+          format: uuid
+      required:
+      - command_id
+      - reviewer_id
+    CandidateSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        police_organization_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/CandidateSummaryStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - police_organization_id
+      - status
+      - updated_at
+    CandidateSummaryStatusEnum:
+      enum:
+      - RECEIVED
+      - UNDER_REVIEW
+      - VERIFIED
+      - REJECTED
+      type: string
+      description: |-
+        * `RECEIVED` - Received
+        * `UNDER_REVIEW` - Under review
+        * `VERIFIED` - Verified
+        * `REJECTED` - Rejected
     CommandID:
       type: object
       properties:
@@ -1948,6 +2197,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AssignmentSummary'
+    PaginatedCandidateSummaryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateSummary'
     PaginatedIncidentSummaryList:
       type: object
       required:

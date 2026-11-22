@@ -104,11 +104,26 @@ Unique: `(video_source_id, external_event_id)`. A retry returns the existing eve
 | Field | PostgreSQL type | Null / default | Key / index | Meaning, validation and sensitivity |
 |---|---|---|---|---|
 | `id` | `uuid` | No / Django UUIDv4 | PK | Candidate identity; distinct from event and incident identifiers. |
+| `police_organization_id` | `uuid` | Yes / NULL | FK Organization, PROTECT | Backend-bound Police jurisdiction. Legacy rows may remain null; new reviewer assignments require an active Police organization. |
 | `status` | `varchar(20)` | No / `RECEIVED` | Check; `(status, created_at)` | `RECEIVED`, `UNDER_REVIEW`, `VERIFIED`, `REJECTED`. Current candidate state only. |
 | `created_at` | `timestamptz` | No / Django timestamp | `(status, created_at)` | Candidate creation instant. |
 | `updated_at` | `timestamptz` | No / Django timestamp | — | Last current-state update. |
 
 At least one `CandidateDetectionEvent` association must exist before the candidate is placed in review. Enforce with the candidate-association transaction, because a row CHECK cannot enforce a child-row count.
+
+### `incidents_candidate_reviewer_assignment`
+
+| Field | PostgreSQL type | Null / default | Key / index | Meaning, validation and sensitivity |
+|---|---|---|---|---|
+| `id` | `uuid` | No / Django UUIDv4 | PK | Immutable assignment record identity. |
+| `candidate_id` | `uuid` | No / none | FK Candidate, PROTECT, UNIQUE | One initial assignment record per candidate. No historical rows are backfilled. |
+| `police_organization_id` | `uuid` | No / none | FK Organization, PROTECT; `(police_organization_id, assigned_at)` | Candidate's active Police organization at assignment time. |
+| `reviewer_id` | `uuid` | No / none | FK User, PROTECT; `(reviewer_id, assigned_at)` | Active Police reviewer selected for the candidate. |
+| `assigned_by_user_id` | `uuid` | No / none | FK User, PROTECT | Active ADMIN-group assigner with active membership in the candidate Police organization. |
+| `command_id` | `uuid` | No / none | UNIQUE | Idempotency key for assignment retries. |
+| `assigned_at` | `timestamptz` | No / Django timestamp | — | Assignment instant in UTC; the row is append-only. |
+
+Assignment creation and its `CANDIDATE_REVIEWER_ASSIGNED` AuditEvent commit together. The one-to-one candidate key and candidate row lock prevent concurrent duplicate assignments. The migration creates the table only and does not assign existing candidates.
 
 ### `incidents_candidate_detection_event`
 

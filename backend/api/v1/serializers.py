@@ -4,7 +4,11 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.accounts.models import User
-from apps.incidents.models import IncidentStatus
+from apps.incidents.models import (
+    AccidentCandidate,
+    CandidateReviewerAssignment,
+    IncidentStatus,
+)
 from apps.notifications.models import NotificationStatus
 from apps.organizations.models import OrganizationMembership
 from apps.responses.models import Response, ResponseActivityKind, ResponseAssignment
@@ -98,6 +102,35 @@ class IncidentSummarySerializer(serializers.Serializer):
     updated_at = serializers.DateTimeField(read_only=True)
 
 
+class CandidateSummarySerializer(serializers.ModelSerializer):
+    police_organization_id = serializers.UUIDField(read_only=True, allow_null=True)
+
+    class Meta:
+        model = AccidentCandidate
+        fields = ("id", "police_organization_id", "status", "created_at", "updated_at")
+        read_only_fields = fields
+
+
+class CandidateReviewerAssignmentSerializer(serializers.ModelSerializer):
+    candidate_id = serializers.UUIDField(read_only=True)
+    police_organization_id = serializers.UUIDField(read_only=True)
+    reviewer_id = serializers.UUIDField(read_only=True)
+    assigned_by_user_id = serializers.UUIDField(read_only=True)
+
+    class Meta:
+        model = CandidateReviewerAssignment
+        fields = (
+            "id",
+            "candidate_id",
+            "police_organization_id",
+            "reviewer_id",
+            "assigned_by_user_id",
+            "command_id",
+            "assigned_at",
+        )
+        read_only_fields = fields
+
+
 class AssignmentSummarySerializer(serializers.ModelSerializer):
     incident_id = serializers.UUIDField(read_only=True)
     target_organization_id = serializers.UUIDField(read_only=True)
@@ -139,6 +172,11 @@ class AssignmentCommandResponseSerializer(serializers.Serializer):
     replayed = serializers.BooleanField()
 
 
+class CandidateReviewerAssignmentCommandResponseSerializer(serializers.Serializer):
+    data = CandidateReviewerAssignmentSerializer()
+    replayed = serializers.BooleanField()
+
+
 class ResponseActivityCommandResponseSerializer(serializers.Serializer):
     data = ResponseActivitySerializer()
     replayed = serializers.BooleanField()
@@ -156,6 +194,10 @@ class DetectionEventCreatedSerializer(serializers.Serializer):
 
 class CommandIDSerializer(serializers.Serializer):
     command_id = serializers.UUIDField()
+
+
+class CandidateReviewerAssignmentInputSerializer(CommandIDSerializer):
+    reviewer_id = serializers.UUIDField()
 
 
 class LogoutSerializer(serializers.Serializer):

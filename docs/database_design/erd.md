@@ -54,9 +54,19 @@ erDiagram
     }
     ACCIDENT_CANDIDATE {
         uuid id PK
+        uuid police_organization_id FK
         varchar status
         timestamptz created_at
         timestamptz updated_at
+    }
+    CANDIDATE_REVIEWER_ASSIGNMENT {
+        uuid id PK
+        uuid candidate_id FK, UK
+        uuid police_organization_id FK
+        uuid reviewer_id FK
+        uuid assigned_by_user_id FK
+        uuid command_id UK
+        timestamptz assigned_at
     }
     CANDIDATE_DETECTION_EVENT {
         uuid id PK
@@ -188,12 +198,17 @@ erDiagram
     AUTH_GROUP ||--o{ ORGANIZATION_MEMBERSHIP : scopes_role
     APP_USER ||--o{ ORGANIZATION_MEMBERSHIP : belongs
     ORGANIZATION ||--o{ ORGANIZATION_MEMBERSHIP : has_members
+    ORGANIZATION o|--o{ ACCIDENT_CANDIDATE : police_route
     ORGANIZATION o|--o{ VIDEO_SOURCE : owns
     VIDEO_SOURCE ||--o{ DETECTION_EVENT : produces
     ACCIDENT_CANDIDATE ||--|{ CANDIDATE_DETECTION_EVENT : groups
     DETECTION_EVENT ||--o| CANDIDATE_DETECTION_EVENT : associated_once
     ACCIDENT_CANDIDATE ||--o| CANDIDATE_REVIEW : final_review
     APP_USER ||--o{ CANDIDATE_REVIEW : reviewer
+    ACCIDENT_CANDIDATE ||--o| CANDIDATE_REVIEWER_ASSIGNMENT : reviewer_assignment
+    ORGANIZATION ||--o{ CANDIDATE_REVIEWER_ASSIGNMENT : assigned_within
+    APP_USER ||--o{ CANDIDATE_REVIEWER_ASSIGNMENT : assigned_reviewer
+    APP_USER ||--o{ CANDIDATE_REVIEWER_ASSIGNMENT : assignment_actor
     ACCIDENT_CANDIDATE ||--o| ACCIDENT_INCIDENT : verified_into
     DETECTION_EVENT o|--o{ EVIDENCE_ASSET : provenance
     EVIDENCE_ASSET ||--o{ EVIDENCE_ASSOCIATION : linked
@@ -229,6 +244,7 @@ erDiagram
 - `AUTH_GROUP` and `AUTH_PERMISSION` are Django's built-in role/permission mechanisms. A human may hold multiple groups. `OrganizationMembership` scopes a Police/Hospital group to one organization; backend object authorization also requires an active membership for the assignment target. `AI_SERVICE` is a machine principal represented only by a non-secret `service_ref`, not an `APP_USER` or group. Django's auth many-to-many join tables are framework-managed and are not custom domain entities.
 - An organization can have many members and sources. A source owner organization is optional for individually owned approved sources; an opaque owner reference is required when there is no organization.
 - Each DetectionEvent belongs to exactly one authorized VideoSource. A candidate has one or more distinct events; an event has zero or one candidate association. A database uniqueness rule prevents attaching one event to two candidates.
+- A candidate may have no reviewer assignment or one immutable `CandidateReviewerAssignment`. Its unique candidate FK prevents a second assignment; the record retains the reviewer, assigning user, Police organization, command ID, and timestamp. Historical candidates remain unassigned after migration.
 - A candidate has zero or one incident. `AccidentIncident.candidate_id` is non-null and unique, so an incident cannot exist without its verified candidate and a candidate cannot create two incidents.
 - Evidence associations use three explicit nullable foreign keys, one each to a controlled VideoSource, candidate, or incident; a row must set exactly one. There is no generic content-type relationship. A controlled-file source is represented by a private EvidenceAsset and a source-level association before authorization. One asset can be associated with a source, candidate, and resulting incident through separate rows; media bytes are not duplicated.
 - Location rows use explicit foreign keys for a VideoSource, candidate, incident, and provenance source event. Exactly one subject foreign key (source, candidate, or incident) is set. The current record per subject is enforced with partial unique indexes. Camera position and accident-location claims remain distinguished by `claim_kind` and `source_method`.
@@ -246,6 +262,7 @@ erDiagram
 | VideoSource | MVP table | Owns source identity, owner/authorization, health, and policy references; source credentials remain outside the database. |
 | DetectionEvent | MVP table | Stores one accepted machine observation with stable source-scoped identity and model/time provenance. |
 | AccidentCandidate | MVP table | Stores the potential accident's current human-review state, separate from observations and incidents. |
+| CandidateReviewerAssignment | MVP append-only table | Records the single initial reviewer assignment, assigning user, Police organization, and command; no reassignment or unassignment is enabled. |
 | CandidateDetectionEvent | MVP explicit join table | Preserves many-event provenance while ensuring one event is associated at most once. |
 | CandidateReview | MVP table | Stores the one final human verification/rejection decision, reviewer, time, rationale, and retry key. |
 | AccidentIncident | MVP table | Stores authoritative incident state created only after verified candidate; unique candidate link prevents duplicates. |

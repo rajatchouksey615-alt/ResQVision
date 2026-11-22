@@ -1,5 +1,6 @@
-"""Candidate review and incident lifecycle commands."""
+"""Candidate assignment, review, and incident lifecycle commands."""
 
+from .assignments import assign_candidate_reviewer
 from .candidates import (
     associate_detection_event,
     begin_candidate_review,
@@ -13,6 +14,7 @@ from .lifecycle import close_incident, get_incident, resolve_incident, transitio
 
 __all__ = [
     "associate_detection_event",
+    "assign_candidate_reviewer",
     "begin_candidate_review",
     "close_incident",
     "create_candidate",

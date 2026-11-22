@@ -17,7 +17,7 @@ The ten Django applications each own a persistence domain:
 - `organizations`: `Organization` and `OrganizationMembership`.
 - `sources`: `VideoSource` authorization and availability metadata.
 - `detection`: source-scoped, provenance-aware `DetectionEvent` records.
-- `incidents`: `AccidentCandidate`, `CandidateDetectionEvent`, `CandidateReview`, authoritative `AccidentIncident`, and `IncidentStatusHistory`.
+- `incidents`: `AccidentCandidate`, `CandidateDetectionEvent`, append-only `CandidateReviewerAssignment`, `CandidateReview`, authoritative `AccidentIncident`, and `IncidentStatusHistory`.
 - `evidence`: `EvidenceAsset`, typed `EvidenceAssociation`, and `EvidenceUploadSession` metadata.
 - `locations`: provenance-aware `LocationRecord` and `LocationCorrectionHistory`.
 - `responses`: independent `ResponseAssignment` records, append-only `Response` activities, and `AssignmentStatusHistory`.
@@ -35,7 +35,7 @@ Services live under each owning app's `services/` package and accept typed actor
 - `common/domain/`: human and machine actor contexts, domain exceptions, typed command results, and deny-by-default policy interfaces.
 - `audit/services/`: allow-listed audit events with safe context and actor snapshots.
 - `detection/services/`: provenance validation, authorized-source event ingestion, semantic replay handling, and object-scoped reads.
-- `incidents/services/`: candidate/event association, review workflow, atomic verified incident creation, and incident lifecycle transitions.
+- `incidents/services/`: candidate/event association, one-time organization-scoped Police reviewer assignment, review workflow, atomic verified incident creation, and incident lifecycle transitions.
 - `organizations/services/` and `sources/services/`: membership lifecycle and video-source registration/authorization operations.
 - `responses/services/`: independent agency assignments, acknowledgement, response activity, cancellation, reassignment, resolution, and closure policy hooks.
 - `evidence/services/`: upload-session and evidence metadata lifecycle, access checks, and staged deletion without a storage provider.
@@ -48,7 +48,7 @@ Unresolved authority decisions fail closed through `PolicyNotConfigured`; tests 
 
 The API is a transport adapter over the existing domain services. Human requests use database-backed SimpleJWT access tokens; refresh tokens rotate and are blacklisted, and password changes invalidate prior access and refresh tokens. DRF does not enable browser session authentication. Protected collections scope records before pagination, and response writes call the existing assignment services.
 
-The API exposes account/profile and own-membership reads, assignment-scoped incident summaries, assigned-target response commands, and recipient-owned notification reads. Candidate review, source administration, incident resolution/closure, assignment creation/cancellation/reassignment, evidence reads, and location reads are unavailable while their authority rules remain unresolved. Evidence upload is unavailable without an approved storage provider. Detection intake has a separate machine-authentication interface and returns unavailable until OAD-017 and source authorization are configured.
+The API exposes account/profile and own-membership reads, reviewer-assigned candidate list/detail and one-time reviewer assignment, assignment-scoped incident summaries, assigned-target response commands, and recipient-owned notification reads. Candidate event association/review, source administration, incident resolution/closure, response assignment creation/cancellation/reassignment, evidence reads, and location reads remain unavailable while their authority rules remain unresolved. Evidence upload is unavailable without an approved storage provider. Detection intake has a separate machine-authentication interface and returns unavailable until OAD-017 and source authorization are configured.
 
 See [API documentation](../docs/api_documentation/README.md) for endpoint contracts and blocked capabilities.
 

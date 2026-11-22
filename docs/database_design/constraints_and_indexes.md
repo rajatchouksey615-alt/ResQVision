@@ -61,6 +61,7 @@ Use named PostgreSQL `CHECK` constraints for rules over the current row. The fol
 | `ck_event_digest` | DetectionEvent | Optional digest is exactly 64 lowercase hexadecimal characters. |
 | `ck_event_metadata_version`, `ck_event_metadata_object`, `ck_event_provenance_nonblank` | DetectionEvent | Metadata schema version is at least one; auxiliary JSONB is an object; external event identity and model/service provenance are nonblank. |
 | `ck_candidate_status` | Candidate | Status is `RECEIVED`, `UNDER_REVIEW`, `VERIFIED`, or `REJECTED`. |
+| CandidateReviewerAssignment unique keys | CandidateReviewerAssignment | Unique `candidate_id` permits one immutable assignment row per candidate; unique `command_id` prevents command reuse. |
 | `ck_association_method` | CandidateDetectionEvent | Method is `RULE_BASED`, `REVIEWER_CONFIRMED`, or `MANUAL`; manual methods require a user actor. |
 | `ck_review_rationale` | CandidateReview | `decision` is `VERIFIED` or `REJECTED`; rejection requires `NULLIF(btrim(rationale), '') IS NOT NULL`. A normal unique constraint on non-null `candidate_id` permits only one final decision under the no-reopen MVP rule. |
 | `ck_incident_status` | Incident | Status is `OPEN`, `RESPONSE_ACTIVE`, `RESOLVED`, or `CLOSED`. |
@@ -90,7 +91,7 @@ Use named PostgreSQL `CHECK` constraints for rules over the current row. The fol
 | `ck_audit_target` | AuditEvent | `resource_type` is in the declared allow-list; `resource_id` may be null for authentication or an unaccepted ingestion attempt with no canonical target. |
 | `ck_audit_outcome`, `ck_audit_context_object`, `ck_audit_context_version`, `ck_audit_action_nonblank` | AuditEvent | Outcome is `SUCCESS`, `DENIED`, `FAILED`, or `SIMULATED`; context is a versioned JSON object and action is nonblank. Context field allow-listing remains application validation. |
 
-Database CHECK constraints cannot validate other rows/tables. Do not attempt to enforce that a controlled-file VideoSource has an AVAILABLE source EvidenceAsset before authorization, that a candidate has one or more events before review, source authorization at event intake, candidate status versus review row, candidate-to-incident creation, organization-kind/group-name alignment, same-incident/prior-cancelled reassignment, or assignment-terminal aggregation with a cross-table CHECK. Use a transaction, row lock, FK/unique constraint, and explicit application/domain validation. The partial unique source-input index limits a controlled-file source to at most one source EvidenceAsset; the minimum/availability rule is transactional.
+Database CHECK constraints cannot validate other rows/tables. Do not attempt to enforce that a controlled-file VideoSource has an AVAILABLE source EvidenceAsset before authorization, that a candidate has one or more events before review, source authorization at event intake, candidate status versus review row, candidate-to-incident creation, CandidateReviewerAssignment organization matching its candidate, organization-kind/group-name alignment, same-incident/prior-cancelled reassignment, or assignment-terminal aggregation with a cross-table CHECK. Use a transaction, row lock, FK/unique constraint, and explicit application/domain validation. The partial unique source-input index limits a controlled-file source to at most one source EvidenceAsset; the minimum/availability rule is transactional.
 
 ## Query Indexes
 
@@ -105,6 +106,8 @@ Unique constraints and partial unique indexes above also serve query paths. Add 
 | `ix_event_source_detected` | DetectionEvent `(video_source_id, detected_at)` | Source timelines and event provenance. |
 | `ix_event_received` | DetectionEvent `(received_at)` | Intake operations and retention review. |
 | `ix_candidate_review_queue` | Candidate `(status, created_at)` | Reviewer queue ordered oldest/newest. |
+| `ix_cand_assign_reviewer` | CandidateReviewerAssignment `(reviewer_id, assigned_at)` | Load a reviewer's assigned candidate queue. |
+| `ix_cand_assign_org_time` | CandidateReviewerAssignment `(police_organization_id, assigned_at)` | Load assignments scoped to one Police organization. |
 | `ix_cand_event_candidate_time` | CandidateDetectionEvent `(candidate_id, linked_at)` | Load candidate provenance and events. |
 | `ix_review_reviewer_time` | CandidateReview `(reviewer_id, reviewed_at)` | Reviewer activity/audit review. |
 | `ix_review_time` | CandidateReview `(reviewed_at)` | Time-bounded review history. |

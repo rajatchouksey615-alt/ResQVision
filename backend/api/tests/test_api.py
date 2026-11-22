@@ -12,7 +12,11 @@ from rest_framework_simplejwt.tokens import UntypedToken
 
 from apps.audit.models import AuditEvent
 from apps.detection.models import DetectionEvent
-from apps.incidents.models import AccidentCandidate, AccidentIncident
+from apps.incidents.models import (
+    AccidentCandidate,
+    AccidentIncident,
+    CandidateReviewerAssignment,
+)
 from apps.notifications.models import Notification, NotificationStatus
 from apps.organizations.models import MembershipStatus, Organization, OrganizationMembership
 from apps.responses.models import AssignmentStatus, Response
@@ -382,6 +386,95 @@ def test_unconfigured_machine_auth_fails_closed_and_human_jwt_is_not_machine_aut
 
 
 @pytest.mark.django_db
+def test_candidate_assignment_api_and_reads_are_reviewer_scoped(user, police_organization):
+    assigner = get_user_model().objects.create_user(
+        "candidate-admin@example.test", "local-test-password"
+    )
+    assigner.groups.add(Group.objects.get(name="ADMIN"))
+    add_membership(assigner, police_organization)
+    add_membership(user, police_organization)
+    candidate = AccidentCandidate.objects.create(police_organization=police_organization)
+    command_id = str(uuid4())
+    admin_client, _ = make_client_with_token(assigner)
+
+    response = admin_client.post(
+        f"/api/v1/candidates/{candidate.pk}/assignment/",
+        {"reviewer_id": str(user.pk), "command_id": command_id},
+        format="json",
+    )
+    replay = admin_client.post(
+        f"/api/v1/candidates/{candidate.pk}/assignment/",
+        {"reviewer_id": str(user.pk), "command_id": command_id},
+        format="json",
+    )
+
+    assert response.status_code == 201
+    assert response.json()["data"]["candidate_id"] == str(candidate.pk)
+    assert response.json()["data"]["reviewer_id"] == str(user.pk)
+    assert replay.status_code == 200
+    assert replay.json()["replayed"] is True
+    assert (
+        AuditEvent.objects.filter(
+            action="CANDIDATE_REVIEWER_ASSIGNED", resource_id=candidate.pk
+        ).count()
+        == 1
+    )
+
+    reviewer_client, _ = make_client_with_token(user)
+    listed = reviewer_client.get("/api/v1/candidates/")
+    detail = reviewer_client.get(f"/api/v1/candidates/{candidate.pk}/")
+    assert listed.status_code == detail.status_code == 200
+    assert listed.json()["count"] == 1
+    assert listed.json()["results"][0]["id"] == str(candidate.pk)
+    assert detail.json()["id"] == str(candidate.pk)
+
+    other_member = get_user_model().objects.create_user(
+        "unassigned-police@example.test", "local-test-password"
+    )
+    add_membership(other_member, police_organization)
+    other_client, _ = make_client_with_token(other_member)
+    assert other_client.get("/api/v1/candidates/").json()["count"] == 0
+    assert other_client.get(f"/api/v1/candidates/{candidate.pk}/").status_code == 404
+
+    # ADMIN scope grants assignment authority, not access to every candidate.
+    assert admin_client.get("/api/v1/candidates/").json()["count"] == 0
+
+    reviewer_membership = OrganizationMembership.objects.get(
+        user=user, organization=police_organization
+    )
+    reviewer_membership.status = MembershipStatus.SUSPENDED
+    reviewer_membership.save(update_fields=["status", "updated_at"])
+    assert reviewer_client.get("/api/v1/candidates/").json()["count"] == 0
+    assert reviewer_client.get(f"/api/v1/candidates/{candidate.pk}/").status_code == 404
+
+
+@pytest.mark.django_db
+def test_candidate_assignment_api_rejects_non_admin_even_with_police_membership(
+    user, police_organization
+):
+    add_membership(user, police_organization)
+    reviewer = get_user_model().objects.create_user(
+        "reviewer-target@example.test", "local-test-password"
+    )
+    add_membership(reviewer, police_organization)
+    candidate = AccidentCandidate.objects.create(police_organization=police_organization)
+    client, _ = make_client_with_token(user)
+
+    response = client.post(
+        f"/api/v1/candidates/{candidate.pk}/assignment/",
+        {"reviewer_id": str(reviewer.pk), "command_id": str(uuid4())},
+        format="json",
+    )
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "authorization_denied"
+    assert not CandidateReviewerAssignment.objects.filter(candidate=candidate).exists()
+    assert AuditEvent.objects.filter(
+        action="DOMAIN_ACTION_DENIED", resource_id=candidate.pk
+    ).exists()
+
+
+@pytest.mark.django_db
 def test_test_machine_authenticator_is_explicit_and_never_proves_identity_from_body(
     user, video_source
 ):
@@ -475,8 +568,8 @@ def test_unapproved_authority_endpoints_fail_closed_without_resource_disclosure(
     location = client.get(f"/api/v1/incidents/{uuid4()}/locations/")
     cancel = client.post(f"/api/v1/assignments/{uuid4()}/cancel/", {}, format="json")
 
-    assert existing.status_code == missing.status_code == 503
-    assert existing.json()["code"] == missing.json()["code"] == "policy_unavailable"
+    assert existing.status_code == missing.status_code == 404
+    assert existing.json()["code"] == missing.json()["code"] == "not_found"
     assert (
         resolve.status_code
         == evidence.status_code

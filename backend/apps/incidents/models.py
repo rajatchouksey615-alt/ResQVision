@@ -67,6 +67,48 @@ class AccidentCandidate(UUIDPrimaryKeyModel):
         return f"Candidate {self.pk} ({self.status})"
 
 
+class CandidateReviewerAssignment(AppendOnlyUUIDModel):
+    """Immutable record of the initial Police reviewer assignment for a candidate."""
+
+    candidate = models.OneToOneField(
+        AccidentCandidate,
+        on_delete=models.PROTECT,
+        related_name="reviewer_assignment",
+    )
+    police_organization = models.ForeignKey(
+        Organization,
+        on_delete=models.PROTECT,
+        related_name="candidate_reviewer_assignments",
+    )
+    reviewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="candidate_reviewer_assignments",
+    )
+    assigned_by_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="created_candidate_reviewer_assignments",
+    )
+    command_id = models.UUIDField()
+    assigned_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "incidents_candidate_reviewer_assignment"
+        constraints = [
+            models.UniqueConstraint(fields=["command_id"], name="uq_candidate_assign_command"),
+        ]
+        indexes = [
+            models.Index(fields=["reviewer", "assigned_at"], name="ix_cand_assign_reviewer"),
+            models.Index(
+                fields=["police_organization", "assigned_at"], name="ix_cand_assign_org_time"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.candidate_id} -> reviewer {self.reviewer_id}"
+
+
 class CandidateDetectionEvent(UUIDPrimaryKeyModel):
     Method = AssociationMethod
 

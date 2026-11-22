@@ -22,6 +22,7 @@ from .views import (
     CandidateAssociateEventsView,
     CandidateCollectionView,
     CandidateDetailView,
+    CandidateReviewerAssignmentCreateView,
     CandidateReviewView,
     DetectionEventSubmissionView,
     EmailTokenView,
@@ -85,6 +86,11 @@ urlpatterns = [
     ),
     path("candidates/", CandidateCollectionView.as_view(), name="candidate_list"),
     path("candidates/<uuid:candidate_id>/", CandidateDetailView.as_view(), name="candidate_detail"),
+    path(
+        "candidates/<uuid:candidate_id>/assignment/",
+        CandidateReviewerAssignmentCreateView.as_view(),
+        name="candidate_reviewer_assignment_create",
+    ),
     path(
         "candidates/<uuid:candidate_id>/associate-events/",
         CandidateAssociateEventsView.as_view(),

@@ -1,6 +1,7 @@
 """Stable, non-disclosing JSON errors for the versioned API."""
 
 from django.core.exceptions import RequestDataTooBig
+from django.http import Http404
 from rest_framework import exceptions
 from rest_framework.views import exception_handler
 
@@ -70,7 +71,7 @@ def api_exception_handler(exc, context):
     elif isinstance(exc, exceptions.PermissionDenied):
         code = "authorization_denied"
         detail = "This action is not permitted."
-    elif isinstance(exc, exceptions.NotFound):
+    elif isinstance(exc, (exceptions.NotFound, Http404)):
         code = "not_found"
         detail = "Resource not found."
     elif isinstance(exc, exceptions.MethodNotAllowed):

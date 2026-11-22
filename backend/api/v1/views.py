@@ -19,7 +19,7 @@ from rest_framework_simplejwt.utils import get_md5_hash_password
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.detection.services import DetectionEventCommand, ingest_detection_event
-from apps.incidents.services import get_incident
+from apps.incidents.services import assign_candidate_reviewer, get_incident
 from apps.notifications.services import mark_notification_read
 from apps.responses.services import (
     acknowledge_assignment,
@@ -40,6 +40,7 @@ from .policies import AssignedIncidentReadPolicy
 from .selectors import (
     active_memberships_for,
     visible_assignment_queryset,
+    visible_candidate_queryset,
     visible_incident_queryset,
     visible_notifications_queryset,
 )
@@ -51,6 +52,10 @@ from .serializers import (
     AssignmentSummarySerializer,
     AssignmentUnableSerializer,
     AuthenticatedUserSerializer,
+    CandidateReviewerAssignmentCommandResponseSerializer,
+    CandidateReviewerAssignmentInputSerializer,
+    CandidateReviewerAssignmentSerializer,
+    CandidateSummarySerializer,
     CommandIDSerializer,
     DetectionEventCreatedSerializer,
     DetectionEventInputSerializer,
@@ -246,18 +251,68 @@ class BlockedSourceDetailView(BlockedPolicyView):
         self._unavailable()
 
 
-class CandidateCollectionView(BlockedPolicyView):
-    @extend_schema(operation_id="candidates_list", responses={503: ErrorEnvelopeSerializer})
-    def get(self, request):
-        del request
-        self._unavailable()
+class CandidateCollectionView(generics.ListAPIView):
+    serializer_class = CandidateSummarySerializer
+    permission_classes = (IsAuthenticatedHuman,)
+
+    @extend_schema(
+        operation_id="candidates_list",
+        responses={200: CandidateSummarySerializer(many=True), **API_ERROR_RESPONSES},
+        description=(
+            "Lists candidates assigned to the authenticated reviewer in their active Police "
+            "organization."
+        ),
+    )
+    def get_queryset(self):
+        return visible_candidate_queryset(get_human_actor(self.request).user)
 
 
-class CandidateDetailView(BlockedPolicyView):
-    @extend_schema(operation_id="candidates_retrieve", responses={503: ErrorEnvelopeSerializer})
+class CandidateDetailView(APIView):
+    permission_classes = (IsAuthenticatedHuman,)
+
+    @extend_schema(
+        operation_id="candidates_retrieve",
+        responses={200: CandidateSummarySerializer, **API_ERROR_RESPONSES},
+    )
     def get(self, request, candidate_id):
-        del request, candidate_id
-        self._unavailable()
+        candidate = get_object_or_404(
+            visible_candidate_queryset(get_human_actor(request).user), pk=candidate_id
+        )
+        return Response(CandidateSummarySerializer(candidate).data)
+
+
+class CandidateReviewerAssignmentCreateView(APIView):
+    permission_classes = (IsAuthenticatedHuman,)
+    throttle_classes = (ScopedRateThrottle,)
+    throttle_scope = "sensitive"
+
+    @extend_schema(
+        operation_id="candidates_assign_reviewer",
+        request=CandidateReviewerAssignmentInputSerializer,
+        responses={
+            201: CandidateReviewerAssignmentCommandResponseSerializer,
+            200: CandidateReviewerAssignmentCommandResponseSerializer,
+            **API_ERROR_RESPONSES,
+        },
+    )
+    def post(self, request, candidate_id):
+        serializer = CandidateReviewerAssignmentInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        values = serializer.validated_data
+        result = assign_candidate_reviewer(
+            candidate_id=candidate_id,
+            reviewer_id=values["reviewer_id"],
+            actor=get_human_actor(request),
+            command_id=values["command_id"],
+        )
+        response_data = {
+            "data": CandidateReviewerAssignmentSerializer(result.value).data,
+            "replayed": result.replayed,
+        }
+        return Response(
+            response_data,
+            status=status.HTTP_200_OK if result.replayed else status.HTTP_201_CREATED,
+        )
 
 
 class CandidateAssociateEventsView(BlockedPolicyView):

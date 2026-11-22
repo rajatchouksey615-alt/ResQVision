@@ -41,10 +41,11 @@ Writes call `apps.responses.services.assignments`. Command responses contain `da
 | Method | Path | Access | Current behavior |
 |---|---|---|---|
 | POST | `/ai/detection-events/` | Dedicated AI_SERVICE only | 503 while machine auth is unconfigured under OAD-017; never accepts human JWT as machine identity |
-| GET | `/candidates/` | Human | 503 until reviewer/queue authority is approved |
-| GET | `/candidates/{candidate_id}/` | Human | 503 until candidate read authority is approved |
+| GET | `/candidates/` | Active assigned Police reviewer | Lists only candidates assigned to the caller in their active Police organization |
+| GET | `/candidates/{candidate_id}/` | Active assigned Police reviewer | Assigned candidate detail; out-of-scope is 404 |
+| POST | `/candidates/{candidate_id}/assignment/` | ADMIN-group user with active membership in the candidate Police organization | Assigns one active same-organization Police reviewer; body has `reviewer_id` and `command_id` |
 | POST | `/candidates/{candidate_id}/associate-events/` | Human | 503 until association authority is approved |
-| POST | `/candidates/{candidate_id}/review/` | Human | 503 until reviewer authority is approved |
+| POST | `/candidates/{candidate_id}/review/` | Human | 503 pending separate candidate review authority |
 | GET | `/video-sources/` | Human | 503 until source read scope is approved |
 | POST | `/video-sources/` | Human | 503 until source registration authority is approved |
 | GET | `/video-sources/{source_id}/` | Human | 503 until source read scope is approved |
@@ -60,6 +61,6 @@ Writes call `apps.responses.services.assignments`. Command responses contain `da
 
 Collections use `limit` and `offset`; default limit is 25 and maximum is 100. `status` is the only currently exposed collection filter. Do not send arbitrary model field names or ordering clauses.
 
-Domain command writes require a UUID `command_id`. Retry with the same command ID and same intent after an uncertain response. A reused command ID with different intent returns `409 idempotency_conflict`. Passwords, refresh tokens, and access tokens are never sent in URL parameters.
+Domain command writes require a UUID `command_id`. Retry with the same command ID and same intent after an uncertain response. A reused command ID with different intent returns `409 idempotency_conflict`. Candidate reviewer assignment is one-time; another assignment request returns `409 resource_conflict`, with no reassignment or unassignment route. Passwords, refresh tokens, and access tokens are never sent in URL parameters.
 
 The OpenAPI schema at `/schema/` is generated from the implementation and is also committed as [`openapi.yaml`](openapi.yaml). See the [authentication](authentication_contract.md), [authorization](authorization_contract.md), and [error](error_handling.md) contracts for detailed rules.
