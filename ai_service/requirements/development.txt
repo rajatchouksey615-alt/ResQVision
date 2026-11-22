@@ -1,2 +1,2 @@
-# Phase 0 placeholder. Development, evaluation, and test tools will be selected
+# Placeholder: select development, evaluation, and test tools before implementation.
 # when AI service implementation begins. Include base requirements then.

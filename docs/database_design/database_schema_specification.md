@@ -1,6 +1,6 @@
 # PostgreSQL Database Schema Specification
 
-**Status:** Phase 2B physical schema specification, synchronized with Django model/migration state. Migrations have been applied only to the isolated local development database.
+**Status:** Physical schema specification synchronized with Django model/migration state. Migrations have been applied only to the isolated local development database.
 
 ## Design Decisions
 
@@ -94,6 +94,6 @@ Indexes are selected for stated queues, per-entity timelines, scoped inboxes, id
 
 ## Version and Implementation Preconditions
 
-The Phase 2B development baseline is Python 3.14.10, Django 5.2.19, Django REST Framework 3.18.3, Psycopg 3.3.9, and PostgreSQL 18.7. `AUTH_USER_MODEL`, UUID domain keys, `DEFAULT_AUTO_FIELD=BigAutoField`, and `USE_TZ=True` were set before the first migration. Migration SQL uses UUID, JSONB, check constraints, B-tree/partial indexes, and foreign keys; no PostGIS, extensions, custom SQL types, triggers, or stored procedures are required for the MVP schema. See the [transaction design](transaction_and_integrity_design.md), [retention design](data_lifecycle_and_retention.md), and [implementation plan](database_implementation_plan.md) for lifecycle and rollout details. Production compatibility and deployment remain to be reviewed before deployment.
+The local development compatibility baseline is Python 3.14.10, Django 5.2.19, Django REST Framework 3.18.3, Psycopg 3.3.9, and PostgreSQL 18.7. `AUTH_USER_MODEL`, UUID domain keys, `DEFAULT_AUTO_FIELD=BigAutoField`, and `USE_TZ=True` were set before the first migration. Migration SQL uses UUID, JSONB, check constraints, B-tree/partial indexes, and foreign keys; no PostGIS, extensions, custom SQL types, triggers, or stored procedures are required for the MVP schema. See the [transaction design](transaction_and_integrity_design.md), [retention design](data_lifecycle_and_retention.md), and [implementation plan](database_implementation_plan.md) for lifecycle and rollout details. Production compatibility and deployment remain to be reviewed before deployment.
 
-References: [Django custom user model guidance](https://docs.djangoproject.com/en/6.1/topics/auth/customizing/), [Django constraints](https://docs.djangoproject.com/en/6.1/ref/models/constraints/), [Django indexes](https://docs.djangoproject.com/en/6.1/ref/models/indexes/), [PostgreSQL constraints](https://www.postgresql.org/docs/current/ddl-constraints.html), and [PostgreSQL partial indexes](https://www.postgresql.org/docs/current/indexes-partial.html). Django/PostgreSQL 6.1/18 links are reference documentation only; the ResQVision supported versions remain unselected until the Phase 3 compatibility gate.
+References: [Django custom user model guidance](https://docs.djangoproject.com/en/6.1/topics/auth/customizing/), [Django constraints](https://docs.djangoproject.com/en/6.1/ref/models/constraints/), [Django indexes](https://docs.djangoproject.com/en/6.1/ref/models/indexes/), [PostgreSQL constraints](https://www.postgresql.org/docs/current/ddl-constraints.html), and [PostgreSQL partial indexes](https://www.postgresql.org/docs/current/indexes-partial.html). Django/PostgreSQL 6.1/18 links are reference documentation only; the ResQVision supported versions remain unselected pending compatibility review for domain services.

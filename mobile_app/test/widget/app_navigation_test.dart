@@ -23,7 +23,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       find.textContaining(
-        'This phase adds secure account sign-in and session handling',
+        'Secure account sign-in and session handling are implemented',
       ),
       findsOneWidget,
     );

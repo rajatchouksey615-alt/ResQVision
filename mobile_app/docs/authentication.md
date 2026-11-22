@@ -1,6 +1,6 @@
 # Authentication Contract and Session Lifecycle
 
-Phase 5B integrates the Flutter client with the Django human JWT API. Django remains the source of identity, roles, organization membership, and authorization decisions.
+Mobile authentication integrates the Flutter client with the Django human JWT API. Django remains the source of identity, roles, organization membership, and authorization decisions.
 
 ## Audited backend contract
 

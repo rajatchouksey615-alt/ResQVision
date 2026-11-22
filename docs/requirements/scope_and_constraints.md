@@ -1,12 +1,12 @@
 # Scope and Constraints
 
-**Status:** REVISED_DRAFT — pending team approval. The project is in Phase 1 — Requirements Engineering and System Design; service implementation has not begun.
+**Status:** REVISED_DRAFT — pending team approval. This document covers requirements engineering and system design; service implementation status is described separately.
 
 ## Project Scope
 
 ResQVision is an academic prototype for controlled video analysis, accident candidate generation and verification, evidence metadata, incident management, role-based review, and simulated response coordination.
 
-## Phase 1 Design Scope
+## Requirements and Design Scope
 
 - Specify responsibilities and boundaries for the planned Flutter client, Django REST backend, PostgreSQL, independent Python AI service, notification component, and future object storage.
 - Define requirements for ADMIN, POLICE, and HOSPITAL users, including least-privilege access and proposed incident workflows.
@@ -29,7 +29,7 @@ ResQVision is an academic prototype for controlled video analysis, accident cand
 
 - Real emergency alerts, emergency-service integrations, dispatch, ambulance deployment, or operational response.
 - Public or production service operation, service-level commitments, or claims of emergency readiness.
-- A final database schema, SQL, Django models, or migrations in this phase.
+- A final database schema, SQL, Django models, or migrations in this scope.
 - Implemented endpoints, serializers, or request/response contracts.
 - Unapproved map, object storage, deployment, notification, or AI model provider/version selection.
 - Committing private CCTV footage, personal data, secrets, large datasets, uploaded media, or model weights.
@@ -43,7 +43,7 @@ ResQVision is an academic prototype for controlled video analysis, accident cand
 - Structured metadata belongs in PostgreSQL; media belongs in separately governed object storage.
 - Data use, location provenance/precision, evidence access, source registration, and retention require an approved policy.
 - Use only controlled synthetic or explicitly approved data for development and demonstration.
-- No dependencies are installed and no application services are implemented as part of the requirements/design phase.
+- No dependencies are installed and no application services are implemented as part of the requirements/design work.
 
 ## Open Decisions
 

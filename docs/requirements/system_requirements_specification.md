@@ -1,11 +1,11 @@
 # System Requirements Specification
 
 **Status:** REVISED_DRAFT — pending team approval
-**Project phase:** Phase 1 — Requirements Engineering and System Design
+**Document scope:** Requirements Engineering and System Design
 
 ## 1. Purpose
 
-This specification describes the intended behavior, boundaries, users, and acceptance conditions for ResQVision. It is a planning baseline for a later implementation phase, not an approval of operational emergency response or a claim that any service is implemented.
+This specification describes the intended behavior, boundaries, users, and acceptance conditions for ResQVision. It is a planning baseline for future implementation, not an approval of operational emergency response or a claim that any service is implemented.
 
 ## 2. Project Overview
 
@@ -115,7 +115,7 @@ EvidenceAsset is the canonical name for the controlled media/evidence concept (a
 - Do not store private CCTV footage, credentials, or large private datasets in the public repository.
 - PostgreSQL is for structured records and metadata; actual media belongs in separately governed object storage.
 - Do not select providers, model versions, thresholds, or operational targets without team agreement.
-- This phase does not implement services, endpoints, migrations, or production configuration.
+- This scope does not implement services, endpoints, migrations, or production configuration.
 
 ## 13. Assumptions and Dependencies
 
@@ -127,7 +127,7 @@ EvidenceAsset is the canonical name for the controlled media/evidence concept (a
 
 ## 14. Acceptance Criteria
 
-The requirements and design phase is acceptable for review when:
+The requirements and system design are acceptable for review when:
 
 1. Every functional requirement has a stable identifier, actor, preconditions, flows, postconditions, priority, and testable acceptance criteria.
 2. Non-functional requirements separate required controls from unapproved performance and availability targets, which remain TBD.

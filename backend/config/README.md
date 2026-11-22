@@ -1,6 +1,6 @@
 # Django Configuration
 
-The package contains the Django project entry points and settings for the Phase 2B database foundation.
+The package contains Django project entry points and settings for the local database foundation.
 
 - `settings/base.py` defines installed apps, the custom account model, UTC timestamps, and PostgreSQL environment configuration.
 - `settings/development.py` is local-only. It is not a deployment profile.

@@ -11,4 +11,4 @@
 
 ## Coordination Guidance
 
-The team has four members and should assign primary and secondary ownership based on skills and workload. Likely work areas include mobile, backend and data, AI service, and integration, infrastructure, testing, and documentation; assignments are for the team to decide. Share API and data contract decisions across affected owners. Arrange cross-review so authors do not approve their own changes. Revisit assignments at phase boundaries.
+The team has four members and should assign primary and secondary ownership based on skills and workload. Likely work areas include mobile, backend and data, AI service, integration, infrastructure, testing, and documentation; assignments are for the team to decide. Share API and data contract decisions across affected owners. Arrange cross-review so authors do not approve their own changes. Review ownership as project needs change.

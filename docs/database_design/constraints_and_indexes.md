@@ -1,6 +1,6 @@
 # Database Constraints and Indexes
 
-**Status:** Phase 2B integrity contract synchronized with the implemented Django migrations. Retention, authority, and transaction policies remain subject to review.
+**Status:** Database integrity contract synchronized with the implemented Django migrations. Retention, authority, and transaction policies remain subject to review.
 
 This document is paired with the [schema specification](database_schema_specification.md) and [field dictionary](data_dictionary.md). Names below match the current Django migrations unless explicitly identified as a domain-layer rule. Application authorization and multi-row state transitions are not replaced by database constraints.
 

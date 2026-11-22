@@ -529,7 +529,7 @@ Future<void> _verifyCrossAccountAuthorization({
     expect(hospitalRefreshAfterForbidden.statusCode, 200);
     final Map<String, Object?> rotatedPayload = _decodeObject(
       hospitalRefreshAfterForbidden.body,
-    );
+    );  
     final _MemoryTokenStorage rotatedStorage = _MemoryTokenStorage()
       ..tokens = AuthTokens(
         access: _requiredString(rotatedPayload, 'access'),

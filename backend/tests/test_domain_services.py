@@ -1,4 +1,4 @@
-"""PostgreSQL-backed integration tests for the Phase 3 domain commands."""
+"""PostgreSQL-backed integration tests for domain service commands."""
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
@@ -32,6 +32,7 @@ from apps.evidence.services import (
     validate_evidence,
 )
 from apps.incidents.models import (
+    AccidentCandidate,
     AccidentIncident,
     CandidateDetectionEvent,
     CandidateReview,
@@ -78,7 +79,11 @@ from apps.responses.services import (
     reassign_assignment,
     start_response,
 )
-from apps.sources.models import VideoSource, VideoSourceAuthorizationStatus
+from apps.sources.models import (
+    VideoSource,
+    VideoSourceAuthorizationStatus,
+    VideoSourceAvailabilityStatus,
+)
 from apps.sources.services import authorize_video_source, register_video_source
 from common.domain.actors import HumanActor, MachineActor
 from common.domain.exceptions import (
@@ -97,6 +102,16 @@ class AllowPolicy:
 
     def authorize(self, operation, actor, resource=None) -> bool:
         return operation in self.allowed_operations
+
+
+class RecordingPolicy(AllowPolicy):
+    def __init__(self, *allowed_operations: str):
+        super().__init__(*allowed_operations)
+        self.calls = []
+
+    def authorize(self, operation, actor, resource=None) -> bool:
+        self.calls.append((operation, actor, resource))
+        return super().authorize(operation, actor, resource)
 
 
 def allow(*operations: str) -> AllowPolicy:
@@ -119,12 +134,14 @@ def ai_event_command(source: VideoSource, *, external_id: str, version: str = "1
 
 def authorize_fixture_source(source: VideoSource, user) -> VideoSource:
     source.authorization_status = VideoSourceAuthorizationStatus.AUTHORIZED
+    source.availability_status = VideoSourceAvailabilityStatus.AVAILABLE
     source.authorized_by_user = user
     source.authorized_at = timezone.now()
     source.authorization_reference = "test-source-approval-v1"
     source.save(
         update_fields=[
             "authorization_status",
+            "availability_status",
             "authorized_by_user",
             "authorized_at",
             "authorization_reference",
@@ -153,6 +170,7 @@ def candidate_from_event(source: VideoSource, user, external_id="candidate-event
     candidate = create_candidate(
         detection_event_id=event.pk,
         actor=MachineActor("AI_SERVICE"),
+        policy=allow("candidate.create"),
     )
     return event, candidate
 
@@ -208,12 +226,191 @@ def test_ai_event_ingestion_denies_unapproved_source_and_records_denial(video_so
 
 
 @pytest.mark.django_db
+def test_candidate_creation_enforces_policy_for_machine_and_human_actors(video_source, user):
+    source = authorize_fixture_source(video_source, user)
+    machine_event = make_event(source, "candidate-authorized-machine")
+    machine = MachineActor("AI_SERVICE")
+    machine_policy = RecordingPolicy("candidate.create")
+
+    candidate = create_candidate(
+        detection_event_id=machine_event.pk,
+        actor=machine,
+        policy=machine_policy,
+    )
+    replay = create_candidate(
+        detection_event_id=machine_event.pk,
+        actor=machine,
+        policy=machine_policy,
+    )
+
+    assert replay.pk == candidate.pk
+    assert len(machine_policy.calls) == 2
+    assert all(call[0] == "candidate.create" for call in machine_policy.calls)
+    assert all(call[1] == machine for call in machine_policy.calls)
+    assert all(call[2].pk == machine_event.pk for call in machine_policy.calls)
+    machine_link = CandidateDetectionEvent.objects.get(detection_event=machine_event)
+    assert machine_link.candidate_id == candidate.pk
+    assert machine_link.association_method == "RULE_BASED"
+    assert machine_link.linked_by_user_id is None
+    assert AccidentCandidate.objects.count() == 1
+    assert AuditEvent.objects.filter(action="CANDIDATE_CREATED").count() == 1
+
+    human_event = make_event(source, "candidate-authorized-human")
+    human_policy = RecordingPolicy("candidate.create")
+    human_candidate = create_candidate(
+        detection_event_id=human_event.pk,
+        actor=HumanActor(user),
+        policy=human_policy,
+    )
+    human_link = CandidateDetectionEvent.objects.get(detection_event=human_event)
+    assert human_candidate.pk != candidate.pk
+    assert human_link.association_method == "MANUAL"
+    assert human_link.linked_by_user_id == user.pk
+    assert len(human_policy.calls) == 1
+
+
+@pytest.mark.django_db
+def test_candidate_creation_fails_closed_when_policy_is_missing_or_denies(video_source, user):
+    source = authorize_fixture_source(video_source, user)
+    event = make_event(source, "candidate-policy-denied")
+    actor = MachineActor("AI_SERVICE")
+
+    with pytest.raises(PolicyNotConfigured):
+        create_candidate(detection_event_id=event.pk, actor=actor)
+    with pytest.raises(AuthorizationDenied):
+        create_candidate(detection_event_id=event.pk, actor=actor, policy=allow())
+
+    assert not AccidentCandidate.objects.exists()
+    assert not CandidateDetectionEvent.objects.filter(detection_event=event).exists()
+    assert AuditEvent.objects.filter(action="DOMAIN_ACTION_DENIED").count() == 2
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "invalid_state",
+    ["unauthorized", "unknown", "degraded", "unavailable"],
+)
+def test_candidate_creation_rejects_unusable_source(video_source, user, invalid_state):
+    source = video_source
+    if invalid_state == "unauthorized":
+        source.availability_status = VideoSourceAvailabilityStatus.AVAILABLE
+        source.save(update_fields=["availability_status", "updated_at"])
+    else:
+        authorize_fixture_source(source, user)
+        source.availability_status = getattr(VideoSourceAvailabilityStatus, invalid_state.upper())
+        source.save(update_fields=["availability_status", "updated_at"])
+
+    event = make_event(source, f"candidate-source-{invalid_state}")
+    with pytest.raises(AuthorizationDenied):
+        create_candidate(
+            detection_event_id=event.pk,
+            actor=MachineActor("AI_SERVICE"),
+            policy=allow("candidate.create"),
+        )
+
+    assert not AccidentCandidate.objects.exists()
+    assert not CandidateDetectionEvent.objects.filter(detection_event=event).exists()
+
+
+@pytest.mark.django_db
+def test_candidate_creation_requires_an_existing_detection_event(video_source):
+    with pytest.raises(ResourceNotFound):
+        create_candidate(
+            detection_event_id=uuid4(),
+            actor=MachineActor("AI_SERVICE"),
+            policy=allow("candidate.create"),
+        )
+
+    assert not AccidentCandidate.objects.exists()
+    assert not CandidateDetectionEvent.objects.exists()
+
+
+@pytest.mark.django_db
+def test_candidate_creation_rolls_back_when_success_audit_fails(video_source, user):
+    source = authorize_fixture_source(video_source, user)
+    event = make_event(source, "candidate-audit-rollback")
+
+    with patch(
+        "apps.incidents.services.candidates.record_successful_action",
+        side_effect=RuntimeError("forced candidate audit failure"),
+    ):
+        with pytest.raises(RuntimeError, match="forced candidate audit failure"):
+            create_candidate(
+                detection_event_id=event.pk,
+                actor=MachineActor("AI_SERVICE"),
+                policy=allow("candidate.create"),
+            )
+
+    assert not AccidentCandidate.objects.exists()
+    assert not CandidateDetectionEvent.objects.filter(detection_event=event).exists()
+    assert not AuditEvent.objects.filter(action="CANDIDATE_CREATED").exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_candidate_creation_for_one_event_is_idempotent(video_source, user):
+    source = authorize_fixture_source(video_source, user)
+    event = make_event(source, "concurrent-candidate-create")
+    event_id = event.pk
+    gate = Barrier(2)
+
+    def create_from_thread():
+        close_old_connections()
+        try:
+            gate.wait(timeout=10)
+            return create_candidate(
+                detection_event_id=event_id,
+                actor=MachineActor("AI_SERVICE"),
+                policy=allow("candidate.create"),
+            ).pk
+        finally:
+            close_old_connections()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        candidate_ids = list(pool.map(lambda _: create_from_thread(), range(2)))
+
+    assert candidate_ids[0] == candidate_ids[1]
+    assert AccidentCandidate.objects.count() == 1
+    assert CandidateDetectionEvent.objects.filter(detection_event_id=event_id).count() == 1
+    assert AuditEvent.objects.filter(action="CANDIDATE_CREATED").count() == 1
+
+
+@pytest.mark.django_db
+def test_ai_service_cannot_verify_candidate_or_create_incident(video_source, user):
+    source = authorize_fixture_source(video_source, user)
+    event = make_event(source, "candidate-ai-cannot-verify")
+    candidate = create_candidate(
+        detection_event_id=event.pk,
+        actor=MachineActor("AI_SERVICE"),
+        policy=allow("candidate.create"),
+    )
+
+    with pytest.raises(AuthorizationDenied):
+        verify_candidate(
+            candidate_id=candidate.pk,
+            actor=MachineActor("AI_SERVICE"),
+            command_id=uuid4(),
+            policy=allow("candidate.verify"),
+        )
+
+    assert not CandidateReview.objects.filter(candidate=candidate).exists()
+    assert not AccidentIncident.objects.filter(candidate=candidate).exists()
+
+
+@pytest.mark.django_db
 def test_candidate_creation_association_review_and_default_deny(video_source, user):
     source = authorize_fixture_source(video_source, user)
     first = make_event(source, "candidate-first-event")
-    candidate = create_candidate(detection_event_id=first.pk, actor=MachineActor("AI_SERVICE"))
+    candidate = create_candidate(
+        detection_event_id=first.pk,
+        actor=MachineActor("AI_SERVICE"),
+        policy=allow("candidate.create"),
+    )
     assert (
-        create_candidate(detection_event_id=first.pk, actor=MachineActor("AI_SERVICE")).pk
+        create_candidate(
+            detection_event_id=first.pk,
+            actor=MachineActor("AI_SERVICE"),
+            policy=allow("candidate.create"),
+        ).pk
         == candidate.pk
     )
 

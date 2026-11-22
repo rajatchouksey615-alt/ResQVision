@@ -12,9 +12,9 @@
 - Plan AI evaluation on approved data with documented uncertainty and limitations.
 - Record unresolved product and technical decisions for team review before implementation.
 
-## Phase 1 Scope
+## Requirements and Design Scope
 
-Phase 1 produces revised requirements and high-level system design pending team approval. It covers candidate/incident separation, independent multi-agency assignments, the planned Flutter client, Django REST backend, PostgreSQL conceptual ownership, independent AI service, evidence upload/retrieval boundary, VideoSource authorization, location provenance, notification simulation, user roles, audit, and end-to-end workflows. It does not implement services, physical database schema, migrations, API endpoints/contracts, or production configuration.
+This document defines revised requirements and a high-level system design pending team approval. It covers candidate/incident separation, independent multi-agency assignments, the planned Flutter client, Django REST backend, PostgreSQL conceptual ownership, independent AI service, evidence upload/retrieval boundary, VideoSource authorization, location provenance, notification simulation, user roles, audit, and end-to-end workflows. It does not implement services, physical database schema, migrations, API endpoints/contracts, or production configuration.
 
 ## Planned Prototype Scope
 
@@ -26,4 +26,4 @@ Real emergency dispatch, ambulance deployment, live operational alerts, and auto
 
 ## Current Implementation Status
 
-The repository has completed its foundation setup and is now in the requirements/design phase. Mobile, backend, AI, database, and infrastructure services remain unimplemented.
+The repository has completed its foundation setup. Requirements and system design are documented; mobile, backend, AI, database, and infrastructure services remain at varying stages of implementation.

@@ -1,24 +1,26 @@
 # Incident Response Workflow
 
-**Status:** REVISED_DRAFT — pending team approval; logical workflow sequence is project-owner-approved on 2026-11-19, while detailed scopes and backend contracts remain pending.
+**Status:** REVISED_DRAFT — pending team approval. Police-first simulated response order was approved on 2026-11-19; the assignment-scoped candidate review policy, three outcomes, atomic verified-incident invariant, and audit requirement were approved on 2026-11-21. Runtime contracts remain blocked. Hospital response is outside candidate review.
 
 ## Candidate Lifecycle
 
 | State | Meaning | Allowed transition and actor |
 |---|---|---|
-| RECEIVED | Backend accepted/associated one or more authenticated DetectionEvents with a candidate | Backend moves to UNDER_REVIEW after intake/provenance checks |
-| UNDER_REVIEW | Authorized human review is pending or in progress | Specifically authorized human Police reviewer moves to VERIFIED or REJECTED; identity/scope/criteria remain pending |
-| VERIFIED | Approved Police human verification policy is satisfied | Backend transaction creates one linked OPEN AccidentIncident; no direct AI transition; post-commit Hospital request follows |
-| REJECTED | Human reviewer rejected the candidate | Terminal for ordinary workflow; retain per approved audit/evaluation policy |
+| RECEIVED | Candidate was created through an approved intake/materialization path and has event provenance | Assignment is made by an explicitly authorized authority within the relevant Police organization; intake mechanism remains unresolved |
+| UNDER_REVIEW | Candidate is assigned and available to its specifically assigned authorized Police reviewer with active membership in the assigned organization | Reviewer may record `VERIFIED`, `REJECTED`, or `FURTHER_REVIEW`; no group-wide access |
+| VERIFIED | Assigned authorized human Police reviewer recorded `VERIFIED` | Backend atomically creates exactly one linked `OPEN` AccidentIncident; AI cannot decide; Hospital request is a separately governed later workflow |
+| REJECTED | Assigned authorized human Police reviewer recorded `REJECTED` | No incident is created. Existing runtime requires rejection rationale; the 2026-11-21 policy did not add that requirement. |
+| FURTHER_REVIEW (decision outcome) | Assigned authorized human Police reviewer records that subsequent review is needed | No incident; preserve the candidate for subsequent review and audit the outcome. This is not currently supported by the model/service. |
 
-AI temporal analysis is evidence, not authority. An AI_SERVICE cannot verify/reject a candidate. The project owner approved Police-first human verification; only specifically authorized Police reviewers may decide, not every POLICE user. Multiple DetectionEvents may support one candidate; duplicate event identity is handled idempotently, while distinct-event candidate matching is a separate policy. See the [Accident Verification and Emergency Response Governance Workflow](../architecture/domain/accident_verification_emergency_response_workflow.md) for approved scope and remaining decisions.
+AI detection is an observation and never independently establishes an accident. Only the specifically assigned and authorized human Police reviewer with active membership in the candidate's assigned Police organization may access/review it. Assignment is performed by an explicitly authorized authority within that organization. No whole-`POLICE` access, unrestricted Admin bypass, or new human role is approved. The candidate-to-organization/reviewer binding and assignment authority mechanism remain unresolved. The event-to-candidate trigger/grouping path also remains unresolved; duplicate source/event identity handling does not solve it. See the [candidate review policy](../architecture/domain/candidate_review_verification_policy.md) and [decision register](../architecture/decisions/domain_governance_decision_register.md).
 
 ~~~mermaid
 stateDiagram-v2
-    [*] --> RECEIVED: backend accepts valid DetectionEvent association
+    [*] --> RECEIVED: approved intake materializes candidate
     RECEIVED --> UNDER_REVIEW: candidate queued for human review
-    UNDER_REVIEW --> VERIFIED: authorized human approves
-    UNDER_REVIEW --> REJECTED: authorized human rejects
+    UNDER_REVIEW --> VERIFIED: assigned authorized Police reviewer
+    UNDER_REVIEW --> REJECTED: assigned authorized Police reviewer
+    UNDER_REVIEW --> UNDER_REVIEW: FURTHER_REVIEW; preserve candidate
     VERIFIED --> [*]: linked OPEN AccidentIncident created
     REJECTED --> [*]: retained for audit/evaluation policy
 ~~~
@@ -27,12 +29,14 @@ stateDiagram-v2
 
 | From | To | Actor/guard | Required audit |
 |---|---|---|---|
-| No candidate | RECEIVED | Backend after accepting/associating a valid DetectionEvent | Event IDs, source/time provenance, intake result |
-| RECEIVED | UNDER_REVIEW | Backend queues a candidate with required evidence/provenance | Queue transition and actor/service |
-| UNDER_REVIEW | VERIFIED | Authorized human reviewer only; authority/criteria pending approval | Reviewer, decision, time, evidence references, rationale |
-| UNDER_REVIEW | REJECTED | Authorized human reviewer only | Reviewer, decision, time, rationale |
+| No candidate | RECEIVED | Backend only after approved intake/materialization; event association rule unresolved | Event/source identity, actor/service, outcome |
+| Candidate unassigned | Assigned to Police reviewer | Explicitly authorized authority within relevant Police organization; specific mechanism unresolved | Authority, candidate, organization, assigned reviewer, time/outcome |
+| RECEIVED | UNDER_REVIEW | Candidate assigned to authorized reviewer; active membership/scope checked | Reviewer, candidate, state, time, outcome |
+| UNDER_REVIEW | VERIFIED | Specifically assigned and authorized human Police reviewer with active membership | Reviewer, decision, time/outcome, command; incident ID |
+| UNDER_REVIEW | REJECTED | Same assigned reviewer scope | Reviewer, decision, time/outcome, command; no incident ID |
+| UNDER_REVIEW | FURTHER_REVIEW | Same assigned reviewer scope; keep candidate for subsequent review | Reviewer, outcome, time, command; no incident ID |
 
-No direct transition from RECEIVED to VERIFIED/REJECTED or from REJECTED back to active review is allowed in the proposed model. Corrections/reopening require a separately approved audited policy.
+No direct transition from RECEIVED to a decision outcome or from REJECTED back to active review is in the current model. `FURTHER_REVIEW` is an approved outcome but its persistence/subsequent-review implementation is missing. Corrections/reopening require a separate decision.
 
 ## Candidate Verification and Incident Creation
 
@@ -41,22 +45,25 @@ sequenceDiagram
     participant AI as AI_SERVICE
     participant API as Backend
     participant DB as PostgreSQL
+    actor Authority as Explicitly authorized Police organization authority
     actor Reviewer as Specifically authorized Police reviewer
     AI->>API: Submit DetectionEvent(s) and evidence references
     API->>API: Authenticate machine identity, validate source/provenance, deduplicate event ID
-    API->>DB: Persist each distinct DetectionEvent and create/associate AccidentCandidate
-    API->>DB: Set candidate UNDER_REVIEW
-    Reviewer->>API: Verify or reject with rationale
-    API->>API: Check reviewer authorization and candidate state
-    alt Rejected
-        API->>DB: Record REJECTED and audit; do not create incident
-    else Verified
+    API->>API: Apply approved intake/materialization policy (currently unresolved)
+    API->>DB: Create/associate candidate only when authorized by that policy
+    Authority->>API: Assign candidate within relevant Police organization
+    API->>API: Check assigned reviewer and active Police membership
+    Reviewer->>API: Submit VERIFIED, REJECTED, or FURTHER_REVIEW
+    alt REJECTED
+        API->>DB: Record REJECTED and audit; no incident
+    else FURTHER_REVIEW
+        API->>DB: Record FURTHER_REVIEW and audit; preserve candidate; no incident
+    else VERIFIED
         API->>DB: Atomic commit: VERIFIED candidate + linked OPEN AccidentIncident + histories/audit
-        API->>DB: After incident commit, create linked request for designated Hospital
     end
 ~~~
 
-If the verification/incident transaction fails, neither a falsely VERIFIED candidate nor an orphan incident is committed. Retrying the same decision must not create a second incident. An inconclusive review remains `UNDER_REVIEW` and creates neither an incident nor a Hospital request. Hospital target routing and request retry/state contracts remain open.
+If the verification/incident transaction fails, neither a falsely VERIFIED candidate nor an orphan incident is committed. Retrying the same decision must not create a second incident. `REJECTED` and `FURTHER_REVIEW` create no incident; further review preserves the candidate for subsequent review. The approved Hospital request/response workflow is separate from candidate review.
 
 ## Incident Lifecycle
 

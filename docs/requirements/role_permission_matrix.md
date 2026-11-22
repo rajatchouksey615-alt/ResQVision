@@ -1,6 +1,6 @@
 # Role-Permission Matrix
 
-**Status:** REVISED_DRAFT — pending team approval. The project owner approved a Police-first verification and simulated Hospital response workflow on 2026-11-19; detailed identity/scope and backend policy remain pending. Backend enforcement is required; no role grants real emergency-service access.
+**Status:** REVISED_DRAFT — pending team approval. The project owner approved a Police-first simulated response workflow on 2026-11-19 and candidate assignment/access/outcome policy slices on 2026-11-21. These are policy boundaries, not runtime grants. The candidate assignment authority mechanism remains unresolved. Backend enforcement is required; no role grants real emergency-service access.
 
 ## Principals
 
@@ -15,12 +15,14 @@ Legend: **Yes (proposed)** = allowed under a draft baseline; **Scoped** = only o
 | Authenticate to own human account | Yes (proposed) | Yes (proposed) | Yes (proposed) | Uses separate machine authentication |
 | Create/disable users and assign ADMIN/POLICE/HOSPITAL roles | Yes (proposed) | No | No | No |
 | Register/authorize/suspend VideoSource | Proposed operator; owner approval required | No | No | No |
-| Submit DetectionEvent | No | No | No | Yes, authenticated |
+| Submit DetectionEvent | No | No | No | Blocked until approved machine authentication/source contract; no mechanism enabled |
 | Retry same DetectionEvent identity | No | No | No | Yes, idempotent only |
 | Associate events to AccidentCandidate | Backend policy only | No | No | No |
-| View candidate queue | No authority from ADMIN role alone; separate grant required | Specifically authorized human Police reviewer only; candidate/source/jurisdiction scope TBD | No candidate review under the owner-approved workflow | Own submission outcome only |
-| Verify/reject AccidentCandidate | No authority from ADMIN role alone; separate approval required | Specifically authorized human Police reviewer only; checklist, rationale, count, and scope pending | No candidate decision authority under the owner-approved workflow | No |
-| Create AccidentIncident | Backend only after authorized human verification | No | No | No |
+| Assign candidate to Police organization/reviewer | No authority from ADMIN role alone; may act only if separately authorized within the relevant Police organization; mechanism TBD | Explicitly authorized authority within the relevant Police organization; existing permission/mechanism unresolved | No | No |
+| View candidate queue/detail | No authority from ADMIN role alone; only a person separately assigned and authorized as Police reviewer with active membership in the candidate's assigned Police organization | Specifically assigned and authorized human Police reviewer only, with active membership in the candidate's assigned Police organization; assigned candidate only | No | No candidate access/decision |
+| Record `VERIFIED`, `REJECTED`, or `FURTHER_REVIEW` | No authority from ADMIN role alone; only a person separately assigned and authorized as Police reviewer with active membership in the candidate's assigned Police organization | Specifically assigned and authorized human Police reviewer; `VERIFIED` creates exactly one atomic `OPEN` incident, other outcomes create none; `FURTHER_REVIEW` preserves candidate for subsequent review | No candidate decision authority | No; AI never independently establishes an accident |
+| Create AccidentIncident | Backend only after authorized human `VERIFIED`; exactly one linked `OPEN` incident | No direct creation | No | No |
+| Audit candidate assignment/review/decisions/incident creation | No audit-reader access implied | No audit-reader access implied | No audit-reader access implied | No |
 | View incident summary | Need-to-know scope | Assigned Police target only | Assigned Hospital target only; minimum data | No |
 | View EvidenceAsset metadata | Need-to-know; sensitive access audited | Scoped to Police assignment | Scoped and minimized to Hospital assignment | Own submitted assets only |
 | Upload evidence bytes | No direct broad storage access | No | No | Only backend-authorized object, short-lived/scoped |
@@ -49,7 +51,7 @@ Legend: **Yes (proposed)** = allowed under a draft baseline; **Scoped** = only o
 7. Denials do not reveal whether out-of-scope incidents or evidence exist. Sensitive access attempts and successful reads are audited.
 8. Admin remains subject to least privilege; administrative status does not imply unrestricted evidence or audit access.
 
-## Project-Owner-Approved Workflow Scope
+## Project-Owner-Approved Workflow Scope (2026-11-19)
 
 The project owner approved on 2026-11-19 that a specifically authorized human Police reviewer makes the candidate decision before a Hospital response request is generated. After a verified candidate creates one linked `OPEN` incident, the backend creates a request for the designated Hospital. An authorized Hospital user records acknowledgement and availability/inability, followed by a distinct simulated ambulance-dispatch decision and subsequent simulated response status. Police and Hospital scopes remain independent; all such outcomes are simulated and no external emergency service is contacted.
 
@@ -64,3 +66,14 @@ This approves the workflow role and ordering only. It does not authorize all mem
 - Hospital availability, simulated ambulance-dispatch decision, and subsequent response status vocabulary/transitions and authorized readers.
 - Incident resolution, closure, reopening, override, and handling of unfinished assignments.
 - Evidence fields/media available to each human role and audit-history visibility.
+
+## Subsequent Project-Owner Candidate Review Policy Approval (2026-11-21)
+
+This later approval settles the candidate policy boundaries while preserving the separate 2026-11-19 workflow record above:
+
+- Only the specifically assigned and authorized human Police reviewer with active membership in the candidate's assigned Police organization may access/review that candidate.
+- Candidate assignment must be performed by an explicitly authorized authority within the relevant Police organization. The existing backend permission/mechanism remains unresolved; no global Admin bypass or new human role is approved.
+- Only an authorized human Police reviewer records `VERIFIED`, `REJECTED`, or `FURTHER_REVIEW`. Only `VERIFIED` creates exactly one atomic linked `OPEN` incident; other outcomes create none, and further review preserves the candidate for subsequent review.
+- Candidate assignment, review, decisions, and incident creation must have traceable audit records.
+
+This approval does not resolve event-to-candidate materialization, AI machine authentication, duplicate-submission controls, candidate organization/reviewer data binding, or the implementation gaps for `FURTHER_REVIEW`. It does not change the matrix status from `REVISED_DRAFT` or grant runtime access.

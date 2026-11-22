@@ -6,7 +6,7 @@
 
 ResQVision is an academic major project exploring how computer vision and coordinated software workflows could help identify potential road accidents from authorized CCTV or video sources. The planned system produces AI DetectionEvents, associates them with AccidentCandidates, creates authoritative AccidentIncidents only after human verification, and presents independently tracked Police and Hospital assignments to authorized users.
 
-The project is in **Phase 4: Authentication, Authorization and REST API Layer**. Phase 1 requirements and architecture documents remain a **REVISED_DRAFT pending team approval**. The PostgreSQL-backed Django foundation, domain services, and a versioned human-authenticated API are implemented. Mobile and AI services, approved machine authentication, object storage, and deployment integrations are not configured.
+The PostgreSQL-backed Django foundation, internal domain services, and versioned human-authenticated API are implemented. The Flutter client supports account sign-in and session handling. Requirements and architecture documents remain a **REVISED_DRAFT pending team approval**. The AI service, approved machine authentication, object storage, and deployment integrations are not configured.
 
 ## Problem Statement
 
@@ -75,7 +75,7 @@ Role permissions and workflows are in revised draft and pending team approval. P
 
 ## Development Roadmap
 
-The project is phase-based and feature-driven, with test-driven development applied as executable features are added. Phase 0 established repository structure and standards; Phase 1 documents requirements and system design; Phase 2B established the database; Phase 3 provides internal domain services; Phase 4 adds authentication, scoped API reads, and approved response commands. Next work is to restore the configured PostgreSQL test connection, resolve outstanding authority decisions, and continue client and AI integrations in their later phases.
+Work is organized around functional capabilities, with test-driven development applied as executable features are added. Repository setup established the project structure and standards. Requirements and architecture documentation describes the intended system. The database foundation and internal domain services are implemented, and the API provides human authentication, scoped reads, and approved response commands. Next work is to restore the configured PostgreSQL test connection, resolve outstanding authority decisions, and continue client and AI integrations.
 
 ## Local Development Overview
 
@@ -96,7 +96,7 @@ ResQVision is an academic prototype. It must not send real emergency alerts to p
 
 ## Testing Strategy
 
-Use test-driven development for feature work. The backend includes 67 Phase 3 persistence/domain tests and 20 Phase 4 API security/integration cases. All 87 PostgreSQL-backed tests passed in the latest run. Mobile, AI, storage-adapter, and end-to-end integration tests remain future work.
+Use test-driven development for feature work. The backend includes 67 persistence and domain-service tests and 20 API security and integration cases. All 87 PostgreSQL-backed tests passed in the latest run. Additional mobile, AI, storage-adapter, and end-to-end integration coverage remains future work.
 
 ## Team Information
 
@@ -104,8 +104,8 @@ ResQVision is an academic major project for a team of four. Team member names an
 
 ## Project Status
 
-- Current phase: **Phase 4 — Authentication, Authorization and REST API Layer**
-- Phase 1 specifications: **REVISED_DRAFT, pending team approval**
+- Current implementation: **Human authentication, authorization, and REST API**
+- Requirements and system-design documents: **REVISED_DRAFT, pending team approval**
 - Database: local Django models and migrations applied to a dedicated PostgreSQL development database; no production database or service is configured.
 - Internal domain services: implemented with explicit fail-closed policy hooks for authority decisions that remain unresolved.
 - Human JWT and `/api/v1/` REST endpoints: implemented; see [API documentation](docs/api_documentation/README.md) for scoped and blocked operations.

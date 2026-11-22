@@ -32,42 +32,49 @@ flowchart TD
     Integrity -- Yes --> Duplicate{Same event identity seen before?}
     Duplicate -- Yes --> Idempotent[Return/link prior intake outcome]
     Duplicate -- No --> StoreEvent[Persist distinct DetectionEvent]
-    StoreEvent --> Match{Related to existing AccidentCandidate?}
-    Match -- Confident match --> Associate[Associate event; preserve individual provenance]
-    Match -- Uncertain --> Review[Flag possible duplicate for human review]
-    Match -- No --> NewCandidate[Create AccidentCandidate RECEIVED]
-    Associate --> Candidate[Candidate UNDER_REVIEW]
-    NewCandidate --> Candidate
-    Review --> Candidate
+    StoreEvent --> Intake{Approved candidate materialization trigger and authorization configured?}
+    Intake -- No --> Observation[Retain as DetectionEvent only; no candidate decision]
+    Intake -- Yes --> Group{Apply approved event-to-candidate association rule}
+    Group -- Existing candidate --> Associate[Associate event; preserve individual provenance]
+    Group -- New candidate --> NewCandidate[Create AccidentCandidate RECEIVED]
+    Associate --> Assignment[Assign candidate within relevant Police organization]
+    NewCandidate --> Assignment
+    Assignment --> Reviewer[Only assigned authorized Police reviewer with active org membership may access]
 ~~~
 
-Event-level idempotency and candidate-level duplicate association are separate controls. Same event identity is safely repeatable; different observations may contribute to one candidate. Similarity rules are not approved; uncertain association is reviewed, not silently merged or discarded.
+Event-level idempotency and candidate-level duplicate association are separate controls. Same event identity is safely repeatable; broader submission protection and distinct-event grouping are unresolved. The approved assignment-scoped Police review rule does not define the intake trigger or grouping method. No event automatically becomes a candidate based on this diagram.
 
 ## Candidate Verification and Incident Creation
 
 ~~~mermaid
 sequenceDiagram
+    actor Authority as Explicitly authorized Police organization authority
     actor Reviewer as Specifically authorized Police reviewer
     participant App as Flutter client
     participant API as Backend
     participant DB as PostgreSQL
-    API->>DB: Record candidate RECEIVED and related DetectionEvents
-    API->>DB: Set candidate UNDER_REVIEW
-    Reviewer->>App: Review permitted evidence and uncertainty
-    App->>API: Submit verify/reject decision with rationale
-    API->>API: Check human identity, object scope, role, and transition
-    alt Rejected
+    Authority->>API: Assign candidate within relevant Police organization
+    API->>DB: Record candidate assignment and audit
+    Reviewer->>App: Review assigned candidate if active Police membership and authorized
+    App->>API: Submit VERIFIED, REJECTED, or FURTHER_REVIEW
+    API->>API: Recheck human identity, active org membership, assigned candidate, and transition
+    alt REJECTED
         API->>DB: Record candidate REJECTED and AuditEvent
         Note over DB: No AccidentIncident is created
-    else Verified
+    else FURTHER_REVIEW
+        API->>DB: Record FURTHER_REVIEW and audit; preserve candidate for subsequent review
+        Note over DB: No AccidentIncident is created
+    else VERIFIED
         API->>DB: One transaction: set candidate VERIFIED, create linked OPEN AccidentIncident, append histories/audit
         Note over DB: Transaction failure leaves no orphan incident or falsely verified candidate
     end
 ~~~
 
-The authoritative incident is created by the backend only after authorized human verification. The project owner approved Police-first review on 2026-11-19; the individual reviewer, source/jurisdiction scope, permitted fields, and decision criteria remain pending. Rejected candidates remain distinct for audit/evaluation under the approved retention policy. See the [Accident Verification and Emergency Response Governance Workflow](domain/accident_verification_emergency_response_workflow.md).
+The 2026-11-21 owner-approved policy requires assignment-scoped Police access, all three outcomes, one atomic `OPEN` incident only on verification, and traceable assignment/review/decision/incident audit. The runtime has no candidate assignment relation or `FURTHER_REVIEW` support, so this is the target policy flow, not an enabled API. The assignment authority mechanism and candidate-to-organization binding remain unresolved; candidate fields are not approved by this flow. See the [candidate review policy](domain/candidate_review_verification_policy.md) and [decision register](decisions/domain_governance_decision_register.md).
 
-## End-to-End Multi-Agency Data Flow
+## Separately Approved Later Hospital Response Flow
+
+This 2026-11-19 workflow is outside candidate review. It must not be implemented as part of the candidate-review scope assessed here.
 
 ~~~mermaid
 sequenceDiagram
@@ -75,17 +82,18 @@ sequenceDiagram
     participant AI as AI service
     participant API as Backend
     participant DB as PostgreSQL
+    actor Authority as Explicitly authorized Police organization authority
     actor Reviewer as Specifically authorized Police reviewer
     actor Hospital as Authorized designated Hospital user
     Owner->>AI: Supply authorized VideoSource input
     AI->>AI: Validate source; analyze frames and temporal evidence
     AI->>API: Submit machine-authenticated DetectionEvent(s)
     API->>DB: Deduplicate event identity; associate/create AccidentCandidate
-    Reviewer->>API: Review permitted information; verify, reject, or leave inconclusive
+    Reviewer->>API: Review assigned candidate; VERIFIED, REJECTED, or FURTHER_REVIEW
     alt Rejected
         API->>DB: Record REJECTED candidate and audit; no incident or Hospital request
-    else Inconclusive
-        API->>DB: Keep candidate UNDER_REVIEW; no incident or Hospital request
+    else Further review
+        API->>DB: Record FURTHER_REVIEW; preserve candidate; no incident or Hospital request
     else Verified
         API->>DB: Atomically record verification and one linked OPEN AccidentIncident
         API->>DB: Create post-commit Hospital request linked to incident
@@ -172,7 +180,7 @@ Camera coordinates indicate the camera location, not automatically the accident 
 |---|---|---|
 | VideoSource | Backend registry metadata; source owner owns source | Authorization, source identity/type, location reference, availability/health, timestamp provenance, input configuration reference, processing/retention policy reference |
 | DetectionEvent | Backend intake after AI submission | One machine observation and submission outcome; associated to zero/one candidate; repeated IDs are idempotent |
-| AccidentCandidate | Backend | Has one or more related DetectionEvents and EvidenceAssets; may be verified/rejected; only verified candidate can create incident |
+| AccidentCandidate | Backend | Has related DetectionEvents; assigned to a Police organization/reviewer under the approved policy; outcomes are verified/rejected/further review; only verified creates an incident |
 | AccidentIncident | Backend | Created once from verified candidate; owns incident lifecycle/history, not individual agency acknowledgement |
 | EvidenceAsset | Backend metadata/lifecycle; object storage media bytes | May be linked to candidate and referenced by incident; states PENDING_UPLOAD, UPLOADING, QUARANTINED, AVAILABLE, FAILED, EXPIRED, DELETED |
 | ResponseAssignment | Backend | One verified incident to one eligible Police/Hospital target; one incident may have multiple independent assignments |
@@ -188,7 +196,7 @@ Camera coordinates indicate the camera location, not automatically the accident 
 | Concept | Proposed transitions | Authority and safeguards |
 |---|---|---|
 | DetectionEvent intake outcome | RECEIVED -> ACCEPTED, REJECTED, or DUPLICATE_RESULT; processing outcome is separately SUCCESS, NO_OBSERVATION, UNCERTAIN, or FAILED | Backend assigns intake outcome after machine/source/payload validation; repeated stable identity returns the prior outcome |
-| AccidentCandidate | RECEIVED -> UNDER_REVIEW -> VERIFIED or REJECTED | Backend accepts event association; only authorized human may verify/reject; AI_SERVICE cannot make either transition |
+| AccidentCandidate | `RECEIVED`/`UNDER_REVIEW` with decision outcomes `VERIFIED`, `REJECTED`, `FURTHER_REVIEW` | Only specifically assigned, authorized human Police reviewer with active membership in the assigned Police organization may decide. Further review creates no incident and preserves candidate; AI cannot decide. Current model/service lacks this outcome. |
 | AccidentIncident | OPEN -> RESPONSE_ACTIVE -> RESOLVED -> CLOSED; OPEN may reach RESOLVED if an authorized reviewer records a no-response outcome | Backend owns state; RESOLVED and CLOSED require separate authorized decisions/reasons; reopen remains denied pending policy |
 | ResponseAssignment | PENDING -> ACKNOWLEDGED -> IN_PROGRESS -> COMPLETED; PENDING/ACKNOWLEDGED/IN_PROGRESS may also move to UNABLE_TO_RESPOND or CANCELLED; PENDING -> EXPIRED only under approved timeout policy | Target user changes only own assignment; cancellation/reassignment preserves prior history and creates a new record |
 | Notification | CREATED -> PENDING -> DELIVERED_SIMULATED or FAILED; delivered may become READ; permitted states may become CANCELLED; FAILED may retry to PENDING under policy | Backend owns delivery simulation; read/delivery never acknowledges an assignment; no external emergency channel |

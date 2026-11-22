@@ -12,7 +12,10 @@
 - [Technology decisions](technology_decisions.md): planned stack and status.
 - [Open architecture decisions](open_architecture_decisions.md): unresolved options and trade-offs.
 - [Domain governance and decision resolution](domain/governance_overview.md): repository audit, proposed domain policies, authorization matrix, OAD reconciliation, and implementation readiness.
-- [Accident verification and emergency response governance workflow](domain/accident_verification_emergency_response_workflow.md): project-owner-approved Police-first verification and simulated Hospital response sequence, with pending policy boundaries, Phase 5E proposal, and acceptance criteria.
-- [Police candidate review architecture blueprint](domain/police_candidate_review_architecture_blueprint.md): current implementation assessment, candidate authorization and verification design, consistency controls, Flutter integration, unresolved approvals, and Phase 5E completion criteria.
+- [Accident verification and emergency response governance workflow](domain/accident_verification_emergency_response_workflow.md): project-owner-approved Police-first verification and simulated Hospital response sequence, with pending policy boundaries, candidate review proposal, and acceptance criteria.
+- [Police candidate review architecture blueprint](domain/police_candidate_review_architecture_blueprint.md): owner-approved assignment-scoped Police review policy, current runtime gaps, verification consistency controls, Flutter integration, and candidate-review readiness gates.
+- [Candidate review and verification policy](domain/candidate_review_verification_policy.md): approved reviewer scope, assignment-authority boundary, three decision outcomes, audit requirements, and implementation compatibility.
+- [Candidate review implementation readiness](domain/implementation_readiness.md): capability-by-capability readiness, unresolved security dependencies, and candidate-review entry decision.
+- [Domain governance decision register](decisions/domain_governance_decision_register.md): existing OAD mapping and dated project-owner approval records.
 
 Record accepted significant choices as [architecture decision records](../decisions/README.md) using the ADR template. A planned choice is not an implementation claim.

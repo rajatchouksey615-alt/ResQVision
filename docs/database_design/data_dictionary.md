@@ -1,6 +1,6 @@
-# Phase 2 PostgreSQL Data Dictionary
+# PostgreSQL Data Dictionary
 
-**Status:** Phase 2B physical field dictionary, synchronized with Django models and migrations. The local development database has these migrations applied; no production database is configured.
+**Status:** Physical field dictionary synchronized with Django models and migrations. The local development database has these migrations applied; no production database is configured.
 
 ## Conventions
 

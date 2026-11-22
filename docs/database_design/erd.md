@@ -1,6 +1,6 @@
-# Phase 2 Relational Entity Relationship Design
+# PostgreSQL Relational Entity Relationship Design
 
-**Status:** Phase 2B logical ERD, synchronized with the local Django model/migration baseline. Local migrations have been applied; this does not represent a production deployment. Policy/provider decisions remain open.
+**Status:** Logical ERD synchronized with the local Django model/migration baseline. Local migrations have been applied; this does not represent a production deployment. Policy/provider decisions remain open.
 
 This ERD describes the MVP entities represented by Django models. The [schema specification](database_schema_specification.md) and [data dictionary](data_dictionary.md) define ownership, keys, fields and types. Framework-managed tables are shown only where they clarify role relationships.
 
@@ -237,7 +237,7 @@ erDiagram
 
 ## Entity Evaluation
 
-| Proposed concept | Phase 2 decision | Reason |
+| Proposed concept | Database design decision | Reason |
 |---|---|---|
 | User | MVP custom Django `AbstractUser` model, configured before initial migrations | UUID key and normalized email login; disabled/anonymized rather than cascade-deleted while retained history refers to the account. |
 | Role | Django `Group`/`Permission`, no domain Role table | Reuses Django grants; Police/Hospital target scope is supplied by OrganizationMembership. |

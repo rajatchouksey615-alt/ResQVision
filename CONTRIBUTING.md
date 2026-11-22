@@ -11,7 +11,7 @@ This guide describes the proposed workflow for the four-member academic project 
 5. Update documentation when behavior, interfaces, configuration, or decisions change.
 6. Open a pull request for review and merge only after agreed checks and review are complete.
 
-The intended stable branch is main. develop is the planned integration branch and may be created by the team when ready. Phase 0 does not create or switch branches automatically.
+The intended stable branch is `main`. `develop` is a planned integration branch that the team may create when ready. Repository setup does not create or switch branches automatically.
 
 ## Branch Naming
 
@@ -42,11 +42,15 @@ At least one teammate should review each pull request before merge. Review corre
 
 ## Testing Before Merge
 
-Run the checks relevant to the changed module and report exact outcomes in the pull request. Add or update tests for behavior changes. Do not report checks that were not run. Phase 0 has no runnable module test suites yet.
+Run checks relevant to the changed module and report exact outcomes in the pull request. Add or update tests for behavior changes. Do not report checks that were not run. The repository currently has no runnable module test suites.
 
 ## Documentation Requirements
 
 Use Markdown with clear headings. Document assumptions and decisions. Keep diagrams, API contracts, setup instructions, and module READMEs aligned with the implementation. Mark planned work as planned; do not describe unimplemented behavior as complete.
+
+## Repository Naming Policy
+
+Use functional capability names in files, documentation, configuration, and commit messages. See the [repository naming policy](docs/repository_naming_policy.md). Enable the version-controlled hooks with `git config core.hooksPath .githooks`; the repository policy workflow enforces the same check on pushes and pull requests.
 
 ## Coding Standards
 

@@ -1,6 +1,6 @@
 # ResQVision Mobile
 
-**Status:** Phase 5B human authentication and secure session management are implemented on the Phase 5A foundation. Android is the primary target and Windows is supported for development. This project does not create a Web target.
+**Status:** Human authentication and secure session management are implemented in the Flutter client. Android is the primary target and Windows is supported for development. This project does not create a Web target.
 
 ## Foundation
 
@@ -56,25 +56,25 @@ The live-test setup command is deliberately restricted to `DEBUG=True`, PostgreS
 $env:RESQVISION_LOCAL_TEST_DATA_OPT_IN = '1'
 $env:RESQVISION_TEST_API_BASE_URL = 'http://127.0.0.1:8001/api/v1/'
 # Optional: provide dedicated local accounts and replace password placeholders.
-$env:RESQVISION_TEST_EMAIL = 'phase5c.auth@resqvision.test'
+$env:RESQVISION_TEST_EMAIL = 'dashboard.auth@resqvision.test'
 $env:RESQVISION_TEST_PASSWORD = '<local-generic-test-password>'
-$env:RESQVISION_TEST_ADMIN_EMAIL = 'phase5c.admin@resqvision.test'
+$env:RESQVISION_TEST_ADMIN_EMAIL = 'dashboard.admin@resqvision.test'
 $env:RESQVISION_TEST_ADMIN_PASSWORD = '<local-admin-test-password>'
-$env:RESQVISION_TEST_POLICE_EMAIL = 'phase5c.police@resqvision.test'
+$env:RESQVISION_TEST_POLICE_EMAIL = 'dashboard.police@resqvision.test'
 $env:RESQVISION_TEST_POLICE_PASSWORD = '<local-police-test-password>'
-$env:RESQVISION_TEST_HOSPITAL_EMAIL = 'phase5c.hospital@resqvision.test'
+$env:RESQVISION_TEST_HOSPITAL_EMAIL = 'dashboard.hospital@resqvision.test'
 $env:RESQVISION_TEST_HOSPITAL_PASSWORD = '<local-hospital-test-password>'
 .\mobile_app\scripts\run_local_live_integration.ps1
 ```
 
-The runner uses the existing test variables above. If an account email and password pair is both absent, it uses a reserved local `.test` email and creates a random password in the current PowerShell process only. If only one value in a pair is supplied, it fails rather than substituting another identity. Supply both values to reuse a managed account. To explicitly replace passwords only for accounts already marked by the local fixture, pass `-RotateManagedTestPasswords`; an existing unmarked account is always rejected. The runner starts Django on loopback at the configured port, verifies the anonymous incident endpoint returns `401`, runs the live role and cross-account checks, waits for the documented login throttle window, then runs the Phase 5B lifecycle test. It refuses a nonlocal API URL or a port already owned by another process. It does not print, save, or report passwords or tokens.
+The runner uses the existing test variables above. If an account email and password pair is both absent, it uses a reserved local `.test` email and creates a random password in the current PowerShell process only. If only one value in a pair is supplied, it fails rather than substituting another identity. Supply both values to reuse a managed account. To explicitly replace passwords only for accounts already marked by the local fixture, pass `-RotateManagedTestPasswords`; an existing unmarked account is always rejected. The runner starts Django on loopback at the configured port, verifies the anonymous incident endpoint returns `401`, runs the live role and cross-account checks, waits for the documented login throttle window, then runs the mobile authentication lifecycle test. It refuses a nonlocal API URL or a port already owned by another process. It does not print, save, or report passwords or tokens.
 
 The command `python manage.py setup_local_dashboard_test_data` creates or reuses four managed users (ADMIN, POLICE, HOSPITAL, and a role-free generic authentication identity), one test-only Police organization, one test-only Hospital organization, one source-owner organization, active Police/Hospital memberships, and one suspended Police membership for the Admin fixture. It then creates one controlled-file video source and six detection events; each event goes through candidate review/verification to an OPEN incident with independent PENDING Police and Hospital assignments. Six incidents make the live `limit=5` response return real backend continuation metadata. Django also records the associated source, review, and assignment audit/history rows. The ADMIN has no active operational membership, staff or superuser privileges, and the suspended membership verifies that inactive scope does not reveal incident data. The setup does not create notifications, send messages, contact outside services, dispatch emergency responders, or delete records. Records remain in `resqvision_dev`; no automatic cleanup is provided.
 
-The local-only fixture command uses a narrow policy object only while invoking existing domain services from that management command. No API authorization policy or production authentication behavior is changed. Live tests require the local API base URL and each intended account's email/password variables; without them, they skip with a specific reason. Never use a production or personal account, commit credentials, or put passwords in `.env.example` or test reports. The generic Phase 5B lifecycle test must run separately from the three role accounts to stay within Django's login throttle.
+The local-only fixture command uses a narrow policy object only while invoking existing domain services from that management command. No API authorization policy or production authentication behavior is changed. Live tests require the local API base URL and each intended account's email/password variables; without them, they skip with a specific reason. Never use a production or personal account, commit credentials, or put passwords in `.env.example` or test reports. The generic Mobile authentication lifecycle test must run separately from the three role accounts to stay within Django's login throttle.
 
 ## Scope boundaries
 
-This phase implements human login and session handling only. Incident or assignment workflows, push notifications, maps, AI integration, emergency dispatch, and production deployment remain out of scope. The backend remains authoritative for identity and authorization. No real emergency service, police, hospital, or ambulance dispatch is connected.
+The Flutter client implements human login and session handling. Incident or assignment workflows, push notifications, maps, AI integration, emergency dispatch, and production deployment remain out of scope. The backend remains authoritative for identity and authorization. No real emergency service, police, hospital, or ambulance dispatch is connected.
 
 See [mobile architecture](docs/architecture.md), the [authentication contract and lifecycle](docs/authentication.md), the [project testing strategy](../docs/testing/testing_strategy.md), and the [contribution guide](../CONTRIBUTING.md).

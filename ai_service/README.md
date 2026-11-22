@@ -1,6 +1,6 @@
 # AI Service
 
-The planned AI service uses Python, YOLO, OpenCV, PyTorch, and NumPy to process video, detect and track objects, identify accident candidates, apply temporal verification, and generate evidence. No model, pipeline, API, or runtime dependencies are implemented in Phase 0.
+The planned AI service uses Python, YOLO, OpenCV, PyTorch, and NumPy to process video, detect and track objects, identify accident candidates, apply temporal verification, and generate evidence. No model, pipeline, API, or runtime dependencies are configured yet.
 
 ## Safety and Data Boundaries
 
@@ -12,6 +12,6 @@ The planned AI service uses Python, YOLO, OpenCV, PyTorch, and NumPy to process 
 
 ## Future Setup
 
-The files under requirements/ are placeholders. Select compatible, pinned dependencies and document supported hardware and runtime assumptions during the AI service phase. Organize source by pipeline responsibility without introducing unnecessary frameworks.
+The files under `requirements/` are placeholders. Select compatible, pinned dependencies and document supported hardware and runtime assumptions as part of AI service implementation. Organize source by pipeline responsibility without introducing unnecessary frameworks.
 
 See the [source organization](src/README.md), [configuration conventions](configs/README.md), [dataset policy](datasets/README.md), and [AI detection workflow](../docs/workflows/ai_detection_workflow.md).

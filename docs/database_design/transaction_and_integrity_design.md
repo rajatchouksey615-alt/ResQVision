@@ -1,6 +1,6 @@
 # Transaction and Integrity Design
 
-**Status:** The Django/PostgreSQL schema and Phase 3 internal state-transition services are implemented. Object-storage workflows remain future adapter work; model migrations alone do not implement cross-row transactions.
+**Status:** The Django/PostgreSQL schema and internal state-transition services are implemented. Object-storage workflows remain future adapter work; model migrations alone do not implement cross-row transactions.
 
 All authoritative writes are made by Django in PostgreSQL transactions. State, its transition history, and the corresponding successful business audit event commit together. A failed transaction leaves none of those authoritative changes committed. Authorization denials are recorded in a separate safe audit operation after the failed business transaction so rollback cannot erase the denial record. Never include passwords, tokens, raw media, signed URLs, or unrestricted request bodies in audit context.
 

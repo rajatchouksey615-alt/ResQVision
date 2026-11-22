@@ -27,8 +27,8 @@ foreach ($name in $variableNames) {
 }
 
 $server = $null
-$stdoutPath = Join-Path ([IO.Path]::GetTempPath()) "resqvision-phase5c-$PID.out.log"
-$stderrPath = Join-Path ([IO.Path]::GetTempPath()) "resqvision-phase5c-$PID.err.log"
+$stdoutPath = Join-Path ([IO.Path]::GetTempPath()) "resqvision-dashboard-$PID.out.log"
+$stderrPath = Join-Path ([IO.Path]::GetTempPath()) "resqvision-dashboard-$PID.err.log"
 
 function New-ProcessOnlyPassword {
     $bytes = New-Object byte[] 36
@@ -124,10 +124,10 @@ try {
     }
     $serverPort = $apiUri.Port
 
-    Set-TestAccount 'RESQVISION_TEST_EMAIL' 'RESQVISION_TEST_PASSWORD' 'phase5c.auth@resqvision.test'
-    Set-TestAccount 'RESQVISION_TEST_ADMIN_EMAIL' 'RESQVISION_TEST_ADMIN_PASSWORD' 'phase5c.admin@resqvision.test'
-    Set-TestAccount 'RESQVISION_TEST_POLICE_EMAIL' 'RESQVISION_TEST_POLICE_PASSWORD' 'phase5c.police@resqvision.test'
-    Set-TestAccount 'RESQVISION_TEST_HOSPITAL_EMAIL' 'RESQVISION_TEST_HOSPITAL_PASSWORD' 'phase5c.hospital@resqvision.test'
+    Set-TestAccount 'RESQVISION_TEST_EMAIL' 'RESQVISION_TEST_PASSWORD' 'dashboard.auth@resqvision.test'
+    Set-TestAccount 'RESQVISION_TEST_ADMIN_EMAIL' 'RESQVISION_TEST_ADMIN_PASSWORD' 'dashboard.admin@resqvision.test'
+    Set-TestAccount 'RESQVISION_TEST_POLICE_EMAIL' 'RESQVISION_TEST_POLICE_PASSWORD' 'dashboard.police@resqvision.test'
+    Set-TestAccount 'RESQVISION_TEST_HOSPITAL_EMAIL' 'RESQVISION_TEST_HOSPITAL_PASSWORD' 'dashboard.hospital@resqvision.test'
 
     $configuredEmails = @(
         $env:RESQVISION_TEST_EMAIL,
@@ -194,7 +194,7 @@ try {
     Start-Sleep -Seconds 61
     Invoke-FlutterTest @('test', 'test/integration', '--reporter', 'expanded')
 
-    Write-Host 'Waiting for the documented login throttle window before Phase 5B authentication regression.'
+    Write-Host 'Waiting for the documented login throttle window before the mobile authentication regression run.'
     Start-Sleep -Seconds 61
     foreach ($name in @(
         'RESQVISION_TEST_ADMIN_EMAIL', 'RESQVISION_TEST_ADMIN_PASSWORD',

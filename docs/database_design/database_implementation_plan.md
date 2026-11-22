@@ -1,6 +1,6 @@
 # Database Foundation Implementation Record
 
-**Status:** Phase 2B database foundation and Phase 3 internal domain services are implemented and validated against a dedicated local PostgreSQL development database. This is not a production deployment and does not include HTTP APIs or external integrations.
+**Status:** The database schema and internal domain services are implemented and validated against a dedicated local PostgreSQL development database. This is not a production deployment and does not include HTTP APIs or external integrations.
 
 ## Selected Development Baseline
 
@@ -31,13 +31,13 @@ Applied migration sequence:
 | `responses` | `0001_initial`, `0002` check-constraint correction, `0003` named replacement uniqueness |
 | `notifications` | `0001_initial`, `0002_initial` dependency split, `0003` check-constraint correction, `0004` remove redundant FK indexes, `0005` delivery-attempt command idempotency |
 
-Migration SQL was inspected with `sqlmigrate` before application. Named checks and partial unique indexes protect row-local vocabularies, identities, current claims, active assignments/uploads, evidence availability, delivery-attempt command IDs, and audit/response histories. Cross-row authorization and state transitions are implemented in Phase 3 domain services and transactions, with unresolved authorities failing closed.
+Migration SQL was inspected with `sqlmigrate` before application. Named checks and partial unique indexes protect row-local vocabularies, identities, current claims, active assignments/uploads, evidence availability, delivery-attempt command IDs, and audit/response histories. Cross-row authorization and state transitions are implemented in domain services and transactions, with unresolved authorities failing closed.
 
 ## Local Development and Verification
 
 - PostgreSQL database `resqvision_dev` and role `resqvision_app` are isolated on loopback port `5433`; local credentials live only in the ignored root `.env` and local cluster files.
 - `infrastructure/docker/compose.database.yml` defines the optional local PostgreSQL container. Docker Engine was unavailable during this implementation, so the Compose service was not started; the isolated local PostgreSQL 18.7 cluster was used instead.
-- The PostgreSQL-backed test suite creates a separate test database and currently passes **87 tests**: 67 Phase 3 persistence/domain tests and 20 Phase 4 API security/integration cases. Coverage includes model constraints, service behavior, rollback, idempotency, authorization, API token lifecycle, scoped throttling, machine-auth boundaries, and a real PostgreSQL candidate-verification race.
+- The PostgreSQL-backed test suite creates a separate test database and currently passes **87 tests**: 67 persistence/domain tests and 20 API security/integration cases. Coverage includes model constraints, service behavior, rollback, idempotency, authorization, API token lifecycle, scoped throttling, machine-auth boundaries, and a real PostgreSQL candidate-verification race.
 - `manage.py check` reported no issues; `makemigrations --check --dry-run` found no model drift; `pip check`, Ruff lint/format, and `git diff --check` passed. The Compose file was parsed but not started because Docker Engine was unavailable.
 
 Use a private local `.env`, never production/shared credentials. Do not add actual video, image, camera, storage, emergency-response, or user secrets to Git.

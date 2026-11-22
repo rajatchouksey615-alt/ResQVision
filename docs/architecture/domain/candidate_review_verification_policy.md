@@ -1,74 +1,70 @@
 # Candidate Review and Verification Policy
 
-**Decision status:** Police-first reviewer role and workflow order approved by the project owner on 2026-11-19; individual reviewer grants, scope, and decision criteria remain unresolved.
-**Related existing decisions:** OAD-005, OAD-012, OAD-015.  
+**Decision status:** The project owner approved the policy principles below on 2026-11-21. Runtime authorization and the unimplemented `FURTHER_REVIEW` outcome remain blocked pending technical and authority prerequisites.
+**Related existing decisions:** OAD-005, OAD-012, OAD-015. Candidate reviewer assignment is governed by OAD-012; OAD-013 concerns incident-response assignment and is not a candidate-review authority.
 **Related requirements:** FR-004, FR-005, FR-017, FR-018, FR-019; NFR-002, NFR-008, NFR-009, NFR-019.
 
-## Recommendation
+## Owner-Approved Policy
 
-The project owner has approved a Police-first workflow: a candidate is routed to an appropriately authorized human Police reviewer, who records the decision after reviewing permitted information. This approves the reviewer role class and workflow order only. It does **not** authorize every `POLICE` user or establish a runtime grant. The designated reviewer identity/group, source or jurisdiction scope, queue/assignment model, permitted fields, and criteria must still be recorded. `ADMIN` is not an approved substitute reviewer; Hospital users have no candidate-review permission under this workflow.
+The following are explicit project-owner decisions, not recommendations:
 
-Grant candidate visibility, review initiation, and final verification/rejection as explicit actions over explicit candidate scope. Do not infer authority from group membership alone. The detailed safeguards below remain recommendations except where the Police-first role and ordering are explicitly approved above.
+1. **Candidate access:** Only the specifically assigned and authorized human Police reviewer may review a candidate. The reviewer must have an active Police organization membership in the organization to which the candidate is assigned. Access is limited to that assigned candidate and active organization scope. Membership in the general `POLICE` group alone does not grant access.
+2. **Candidate assignment:** Assignment must be performed by an explicitly authorized authority within the relevant Police organization. This does not grant unrestricted `ADMIN` access and does not establish a new human role. Which existing backend permission or mechanism supplies this authority remains unresolved.
+3. **Decision authority:** Only an authorized human Police reviewer may record a candidate decision. AI detection is an observation and must never independently establish an accident.
+4. **Allowed outcomes:** `VERIFIED`, `REJECTED`, and `FURTHER_REVIEW`.
+   - `VERIFIED` creates exactly one authoritative `OPEN` `AccidentIncident`.
+   - `REJECTED` creates no `AccidentIncident`.
+   - `FURTHER_REVIEW` creates no `AccidentIncident` and preserves the candidate for subsequent review.
+5. **Consistency:** Recording `VERIFIED` and creating its incident are atomic and safe against duplicate or concurrent requests.
+6. **Auditability:** Candidate assignment, review, decisions, and incident creation have traceable audit records.
 
-For the prototype, recommend one authorized human final decision per candidate, after review of the available event provenance and approved evidence. A single-reviewer rule is easier to operate and matches the current `CandidateReview` uniqueness constraint. Whether high-risk/ambiguous cases need a second reviewer remains a stakeholder decision.
+These decisions do not enable a runtime permission, candidate API, AI intake path, or new role. They do not approve particular candidate fields, evidence/media/location access, review criteria, or an assignment technology.
 
-For reviewer assignment, recommend that a separately authorized queue coordinator assign one reviewer of record from the approved cohort to each candidate. Do not assume that coordinator is an Admin. The assigned reviewer may act only within the approved candidate scope; reassignments require a recorded reason and audit. If the team does not approve a coordinator/assignment model, the queue must remain disabled rather than silently allowing any role member to claim all candidates.
+## Authorization and Assignment Matrix
 
-## Authority and Scope Matrix
+| Action | Approved authority and scope | Current implementation evidence | Readiness |
+|---|---|---|---|
+| Assign a candidate to a Police organization/reviewer | An explicitly authorized authority acting within the relevant Police organization. | `AccidentCandidate` has no Police organization or assigned-reviewer field; no assignment service or API exists. | Policy boundary approved; authority mechanism and runtime blocked under OAD-012. |
+| List candidate queue | Specifically assigned, authorized human Police reviewers with active membership in the relevant organization; only their assigned candidates. | `list_reviewable_candidates` invokes `candidate.read_queue`, but no policy is configured and the selector has no organization/assignee scope. Candidate API returns policy-unavailable. | Policy approved; blocked in runtime. |
+| Read candidate detail | Same reviewer, active organization, and assigned-candidate scope. Returned fields still need field-level approval. | `get_candidate` invokes `candidate.read`; candidate detail API is blocked. No candidate access policy or Police assignment relation exists. | Policy approved; fields and runtime blocked. |
+| Start or conduct review | Specifically assigned and authorized human Police reviewer, with active membership in the candidate's assigned Police organization. | `begin_candidate_review` requires a human actor and injected policy, locks the candidate, moves `RECEIVED` to `UNDER_REVIEW`, and audits. It does not check assignment or Police organization. API is blocked. | Policy approved; assignment binding and runtime blocked. |
+| Record `VERIFIED` | Same assigned and authorized human reviewer. Exactly one authoritative `OPEN` incident is created in the same transaction. | `verify_candidate` requires a human actor and injected policy; the transaction writes a final review, candidate status, incident, initial history, and audit. Unique constraints, row locking, and command IDs protect duplicate/concurrent finalization. API is blocked. | Outcome and consistency approved; authorization and API blocked. Existing service is reusable. |
+| Record `REJECTED` | Same assigned and authorized human reviewer; no incident is created. | `reject_candidate` writes a final review/status and audit, with no incident. Current implementation requires nonblank rejection rationale; that requirement was not part of this owner approval. API is blocked. | Outcome approved; authorization/API blocked. Preserve current runtime validation unless separately decided. |
+| Record `FURTHER_REVIEW` | Same assigned and authorized human Police reviewer; no incident; candidate remains available for subsequent review. | Neither `ReviewDecision` nor `CandidateStatus` includes this outcome. No non-final decision record/action exists. `begin_candidate_review` rejects an already `UNDER_REVIEW` candidate, so the current path cannot record the outcome and proceed to a subsequent review. | Policy approved; implementation blocked. Add no new business meaning beyond the approved outcome. |
+| Record candidate assignment/review/decision/incident audit | Traceable records for each named operation; audit content remains safe and attributable. | Audit exists for candidate creation, association, review start, verify, and reject, and the verified incident ID is included in the success audit context. Candidate assignment and `FURTHER_REVIEW` have no record/action. | Partially implemented; assignment and `FURTHER_REVIEW` audit need implementation. |
+| AI candidate decision | None. AI detection never verifies an accident or records any of the three human outcomes. | Final decision service requires a human actor. Machine authentication is unconfigured and candidate APIs are blocked. | Prohibited for AI; no final decision permission. |
 
-| Action | Recommended authority | Scope and preconditions | Current code/API evidence | Status |
-|---|---|---|---|---|
-| Read candidate queue | Designated reviewer cohort only | Candidate must have event provenance and be `RECEIVED` or `UNDER_REVIEW`; scope must be explicitly defined, preferably by an approved source/organization relationship. | Domain selector exists behind `candidate.read_queue`; API is blocked and default policy denies. Candidate has no reviewer-assignment entity. | Blocked pending OAD-012. |
-| Read candidate detail/evidence references | Reviewer with candidate read permission | Same candidate scope; metadata fields and any media need separate authorization. | `get_candidate` uses policy hook; API returns 503. Evidence is separately blocked. | Blocked/unresolved. |
-| Start review | Explicitly authorized human reviewer | Candidate `RECEIVED`, event provenance exists, and actor is within candidate scope. | Service transitions `RECEIVED → UNDER_REVIEW`, locks candidate, and audits; API is blocked. | Blocked pending approval. |
-| Annotate/revise a review | Not enabled by current model; recommend immutable review annotations as separate records if required. | Define whether prior notes are editable, append-only, or superseded before implementation. | `CandidateReview` is one final-decision record; no annotation/revision history model is present. | Unresolved. |
-| Verify | Explicitly authorized human verifier; recommendation is reviewer cohort | Candidate must be `UNDER_REVIEW`, have at least one associated event, pass an approved checklist, and be within actor scope. | `verify_candidate` accepts policy injection; default policy denies. Rationale is currently optional. API is blocked. | Blocked; OAD-012. |
-| Reject | Same or separately approved human verifier | Candidate `UNDER_REVIEW`; nonblank rationale required by current service/model. No incident is created. | `reject_candidate` writes a final review and `REJECTED`; default policy denies; API is blocked. | Blocked; authority unresolved. |
-| Dismiss | No permission recommended at present | Do not add until dismissal has a distinct meaning from false-positive rejection, with retention and reporting rules. | No `DISMISSED` state or command exists. | Not applicable to current lifecycle; future decision unresolved. |
-| AI_SERVICE decision | Prohibited | Machine may submit observations and evidence only; no review, verification, rejection, or candidate visibility beyond any narrowly defined own-submission receipt. | `require_human` guards final decisions; machine auth itself is unconfigured. | Not applicable/prohibited. |
+No `POLICE` group-wide queue, cross-organization access, global Admin bypass, or newly named human role is approved. A candidate must be scoped to a Police organization and assigned reviewer before review access can be evaluated; those relationships do not exist in the current model. Do not substitute incident-response assignment scope for candidate assignment.
 
-## Candidate Lifecycle
+## Decision Lifecycle and Runtime Compatibility
 
-The current and recommended MVP lifecycle is:
+The approved decision semantics are:
 
-~~~mermaid
-stateDiagram-v2
-    [*] --> RECEIVED: backend accepts event association
-    RECEIVED --> UNDER_REVIEW: authorized review begins
-    UNDER_REVIEW --> VERIFIED: authorized human final decision
-    UNDER_REVIEW --> REJECTED: authorized human final decision with rationale
-    VERIFIED --> [*]: one linked OPEN incident created atomically
-    REJECTED --> [*]: retained under approved retention policy
-~~~
+| Outcome | Authoritative incident | Candidate handling |
+|---|---|---|
+| `VERIFIED` | Exactly one linked incident with status `OPEN`, committed atomically with the decision. | Verified candidate. |
+| `REJECTED` | None. | Rejected candidate. |
+| `FURTHER_REVIEW` | None. | Preserve the candidate so it can be reviewed subsequently. |
 
-`NEEDS_EVIDENCE`, `DISMISSED`, duplicate-merged, and reopened states are not part of the current model. If evidence is insufficient, recommend leaving the candidate `UNDER_REVIEW` and recording a safe, attributable reason. Add a new state only after the team defines actor, visibility, transition, notification, and retention semantics.
+The current model stores only final `VERIFIED` and `REJECTED` `CandidateReview` decisions. It supports `RECEIVED`, `UNDER_REVIEW`, `VERIFIED`, and `REJECTED` candidate statuses, with one final review and at most one incident per candidate. The verified service path already meets the approved atomic `OPEN` incident invariant. The rejection path already creates no incident. `FURTHER_REVIEW` is not supported and the current begin-review command does not let an already `UNDER_REVIEW` candidate proceed to another review. This is a material implementation gap, not an ambiguity in the approved outcome.
 
-## Verification Evidence and Rationale
+The owner approval does not specify which candidate fields or media may be viewed, verification thresholds/checklists, rationale requirements, review-count limits, or how assignment changes after `FURTHER_REVIEW`. Do not infer those business rules from code. The current service requires a rejection rationale and allows an empty verification rationale; record this as existing runtime behavior, not as a new owner-approved rule. Any change to that behavior requires its own decision.
 
-Recommend a documented reviewer checklist that records, at minimum:
+## Intake, Provenance, and Audit Boundaries
 
-- one or more validated, associated DetectionEvents and their source/time provenance;
-- the evidence and uncertainty actually available to the reviewer, without treating model confidence as a decision;
-- whether information is missing, contradictory, stale, or unverified;
-- a nonblank rationale for both `VERIFIED` and `REJECTED` outcomes;
-- reviewer identity, timestamp, candidate state before/after, linked incident ID when verified, and command ID.
+`DetectionEvent` is an observation, not a verified accident. The existing service can create a candidate from one explicitly selected event; event creation does not automatically materialize a candidate. Similar-event grouping and candidate merge are not implemented or approved. `(video_source, external_event_id)` uniqueness and one-event-to-one-candidate association protect specific duplicate paths, but do not settle candidate intake authorization or broader duplicate-submission policy.
 
-The requirements describe reviewing temporal evidence and source/evidence provenance and submitting a decision/rationale, but do not establish a specific threshold or evidence sufficiency standard. The service currently checks event provenance exists; it does not require a linked EvidenceAsset or nonblank verification rationale. A checklist and rationale rule must be approved before the API is enabled.
+The owner has not decided how `DetectionEvent` becomes an `AccidentCandidate`, what authentication the AI service uses to submit events, or how intake is protected from unauthorized or duplicate submissions. OAD-015 event/grouping scope, OAD-017 machine authentication, and OAD-019 source authority remain open. Do not expose machine or human candidate creation by inferring permission from the approved Police review policy.
 
-## Conflicting and Concurrent Reviews
+Current audit events cover candidate creation, event association, review start, verified/rejected decisions, and successful incident creation in the verified transaction. There is no candidate-assignment operation or `FURTHER_REVIEW` audit record. Audit reader scope, retention, and integrity governance remain open. Audit payloads must continue to use safe allow-listed fields; they must not include evidence bytes, secrets, or unrestricted rationale/media.
 
-The current technical behavior is deterministic: candidate row lock serializes final decisions; only `UNDER_REVIEW` may be finalized; one final `CandidateReview` and one incident per candidate are constrained; reusing a command ID with different intent is rejected. Recommend treating the first valid committed final decision as authoritative and rejecting a later competing final command as stale/conflict. Do not silently overwrite the first review. If a second-review requirement is approved, the schema and transition contract must change before implementation.
+## Required Gates Before Runtime Enablement
 
-Starting review also locks the candidate and rejects a second start while already `UNDER_REVIEW`. No reviewer assignment or claim/lease timeout exists. The team must decide whether any reviewer in the authorized cohort may start and finalize, or whether assignment/claim ownership is required.
+1. Identify which existing backend permission/mechanism authorizes candidate assignment within the relevant Police organization. Do not enable global Admin authority or introduce a new role by default.
+2. Establish the candidate-to-Police-organization and candidate-to-assigned-reviewer scope in an approved way, with active membership rechecked for each review request.
+3. Approve the DetectionEvent intake/materialization path, AI machine authentication, source authorization, and duplicate-submission controls before enabling candidate intake.
+4. Implement the already approved `FURTHER_REVIEW` outcome so it creates no incident and preserves the candidate for a subsequent review, with a traceable audit record.
+5. Configure and verify server-side action/resource policy for queue, detail, review, and each decision. Keep candidate endpoints fail-closed until these conditions hold.
+6. Preserve the existing atomic verified-incident transaction and add acceptance coverage for organization isolation, assigned-candidate scope, concurrent/duplicate verification, rejection, and subsequent review.
 
-## Duplicate Candidates and Event Grouping
-
-Event-level idempotency uses the stable source/event identity; retrying that same event does not create a second event. Similar but distinct events can be associated to one candidate only under an approved grouping policy, and one event cannot belong to two candidates. The repository does not implement candidate-to-candidate merge, duplicate dismissal, or incident merge. Recommend keeping potentially duplicated candidates distinct until an authorized human resolves the relationship under an approved, audited workflow; never silently merge or discard provenance.
-
-## Rejection, Correction, and Retention
-
-Recommend retaining a rejected candidate and its DetectionEvent/evidence links and audit trail through the approved retention period. Do not erase a false positive from evaluation history by deleting it. A later correction or reversal must be a separately approved, auditable command; the current unique final-review rule does not support revision or reopening.
-
-## Required Approvals
-
-The project owner has approved the Police reviewer role class and Police-before-Hospital sequence. The project team must still approve reviewer identity/group, candidate/source/jurisdiction scope, review assignment or queue rules, one versus multiple final reviewers, the verification checklist, whether verification rationale is mandatory, conflict handling, candidate visibility, and treatment of insufficient/contradictory evidence. Police domain representatives and institutional data governance must confirm operational scope, permitted evidence fields, and retention/use of rejected cases. Hospital has no candidate-review authority under the approved workflow.
+These gates do not require selecting a checklist, threshold, rationale policy, review-count rule, or new role unless a later owner decision explicitly does so.

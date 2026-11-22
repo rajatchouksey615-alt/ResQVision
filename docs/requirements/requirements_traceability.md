@@ -1,6 +1,6 @@
 # Requirements Traceability
 
-**Status:** REVISED_DRAFT — pending team approval. The project owner approved the Police-first verification and simulated Hospital response workflow on 2026-11-19; detailed authorization, target routing, and response contracts remain pending. Phase 2B implements the database persistence foundation. Phase 4 adds human JWT, transport adapters, scoped reads/response commands, and fail-closed routes for unresolved authority. API tests are present but were not executed for this documentation task; broader end-to-end and workflow acceptance remains future work.
+**Status:** REVISED_DRAFT — pending team approval. The project owner approved the Police-first verification and simulated Hospital response workflow on 2026-11-19; detailed authorization, target routing, and response contracts remain pending. The database persistence foundation is implemented. The API provides human JWT authentication, transport adapters, scoped reads and response commands, and fail-closed routes for unresolved authority. API tests are present but were not executed for this documentation task; broader end-to-end and workflow acceptance remains future work.
 
 | Requirement ID | Requirement | Priority | Responsible component | Related workflow | Security implication | Acceptance criteria | Future implementation work | Planned test coverage | Status |
 |---|---|---|---|---|---|---|---|---|---|
@@ -62,7 +62,7 @@
 | NFR-024 | Location provenance | Must | Backend location | UC-13 | Sensitive/uncertain location | Origin, timestamp, uncertainty and correction retained | Location policy | Provenance/privacy tests | REVISED_DRAFT |
 | NFR-025 | Independent response states | Must | Incident/assignment/notification domains | UC-12 | Cross-agency state leakage | Independent histories; no dispatch on timeout | State aggregation rules | Multi-agency transition tests | REVISED_DRAFT |
 
-## Phase 2 Database Responsibility Traceability
+## Database Responsibility Traceability
 
 This supplements the component/workflow matrix above with the database owner and integrity mechanism. The MVP schema and model constraints are implemented in Django migrations and covered by database tests; complete requirement behavior and cross-row service rules remain unimplemented.
 
@@ -80,7 +80,7 @@ This supplements the component/workflow matrix above with the database owner and
 | FR-013, FR-014, FR-016, FR-030, NFR-008 | Privileged action attribution, state histories, scoped history reads, evidence-access audit, and protected audit ledger | `audit_audit_event`, `incidents_incident_status_history`, `responses_assignment_status_history`, plus domain history rows; actor-kind checks, append-only application DB grants, no secret payloads. |
 | NFR-002, NFR-004, NFR-005, NFR-021 | Backend-only object authorization, machine identity separation, safe validation outcomes | User/Group/Membership and source/assignment/evidence FKs; `AI_SERVICE` remains a non-secret machine reference, with authorization enforced by Django domain services rather than client claims. |
 | NFR-007, NFR-010, NFR-018 | Data minimization, retention, account deactivation, object-store/database reconciliation, and restore safety | Retention references on VideoSource/EvidenceAsset; explicit lifecycle rules and TBD durations in [lifecycle and retention](../database_design/data_lifecycle_and_retention.md); cross-system recovery in [transaction design](../database_design/transaction_and_integrity_design.md). |
-| NFR-011, NFR-012, NFR-013, NFR-015, NFR-017, NFR-019 | Environment-dependent availability, performance, capacity, observability, compatibility, and AI evaluation | No numeric DB targets or scale assumptions are introduced. Select versions and workload before implementation; evaluate indexes with representative approved data in a later phase. |
+| NFR-011, NFR-012, NFR-013, NFR-015, NFR-017, NFR-019 | Environment-dependent availability, performance, capacity, observability, compatibility, and AI evaluation | No numeric DB targets or scale assumptions are introduced. Select versions and workload before implementation; evaluate indexes with representative approved data in later implementation work. |
 
 ## Traceability Notes
 

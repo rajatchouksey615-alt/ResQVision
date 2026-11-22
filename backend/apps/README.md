@@ -13,4 +13,4 @@ Each focused Django app owns one persistence domain. Database models and migrati
 - `notifications`: simulated notifications and delivery attempts.
 - `audit`: append-only cross-domain audit events.
 
-No API endpoints, real emergency dispatch, object-storage provider, or AI-service integration is implemented in this phase. Keep business transitions and cross-row authorization in the owning domain service when Phase 3 begins.
+No API endpoints, real emergency dispatch, object-storage provider, or AI-service integration is implemented here. Keep business transitions and cross-row authorization in the owning domain service as implementation proceeds.

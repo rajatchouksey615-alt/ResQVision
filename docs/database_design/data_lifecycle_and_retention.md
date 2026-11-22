@@ -1,6 +1,6 @@
 # Data Lifecycle and Retention
 
-**Status:** Lifecycle fields and tombstone states are represented in the Phase 2B Django schema. Retention durations and legal-hold rules require institutional approval; no automated retention job or object-deletion workflow is implemented.
+**Status:** Lifecycle fields and tombstone states are represented in the Django database schema. Retention durations and legal-hold rules require institutional approval; no automated retention job or object-deletion workflow is implemented.
 
 This document defines how records become inactive, remain attributable, and are eventually removed. Do not enable production-like ingestion or automated purge until the institution approves purpose, retention periods, authorized deletion roles, and legal-hold handling. Every duration below is deliberately **TBD**.
 

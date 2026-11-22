@@ -4,4 +4,4 @@ All notable project changes will be recorded here. This project has not yet esta
 
 ## Unreleased
 
-- Phase 0 repository foundation and engineering documentation.
+- Repository foundation and engineering documentation.

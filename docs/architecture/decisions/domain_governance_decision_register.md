@@ -1,6 +1,6 @@
 # Domain Governance Decision Register
 
-**Status:** Proposed recommendations with a scoped project-owner-approved workflow addendum; existing OAD status entries are unchanged.
+**Status:** Proposed recommendations with dated project-owner-approved workflow and candidate-review policy addenda; existing OAD status entries are unchanged.
 **Register source:** [Open Architecture Decisions](../open_architecture_decisions.md), marked `REVISED_DRAFT — pending team approval`. Existing owner labels remain placeholders.  
 **ADR status:** The [ADR index](../../decisions/README.md) states that no ADRs have been approved.
 
@@ -37,6 +37,31 @@ The project owner explicitly approved the combined Police-first verification and
 | OAD-007 | Keep notification, acknowledgement, dispatch decision, and response outcomes simulated; no real Police, Hospital, ambulance, or emergency-number contact. | None for the academic prototype’s no-contact boundary. OAD-007’s recorded status remains unchanged. |
 
 This is workflow-level project-owner approval, not confirmation from Police/Hospital operational representatives or institutional data governance. It does not decide OAD-001/002/014/016/017/019/020/021 or technical OADs unrelated to this approved sequence. Evidence access, location access, source authorization, machine authentication, retention, audit-reader scope, and real identities remain gated.
+
+## Project-Owner-Approved Candidate Review Policy Addendum (2026-11-21)
+
+The project owner explicitly approved the candidate access, assignment, decision-outcome, incident-creation, and auditability principles recorded below. These are policy decisions mapped to existing OADs, not an approval of runtime permissions or a closure of the OADs as a whole. The approval does not create a new human role, grant unrestricted Admin access, or authorize enabling currently blocked endpoints.
+
+| Existing OAD | Approved policy scope | Still unresolved or incompatible with current runtime; overall OAD status retained |
+|---|---|---|
+| OAD-005 | AI detection must never independently establish an accident; an authorized human makes the candidate decision. | Detector/model choice, evaluation, thresholds, and evidence sufficiency remain open. |
+| OAD-012 | Only the specifically assigned and authorized human Police reviewer may review a candidate, and only with active membership in the Police organization to which that candidate is assigned. Candidate assignment must be performed by an explicitly authorized authority within the relevant Police organization. Do not infer whole-group access, unrestricted Admin authority, or a new role. | Existing backend mechanism for assignment authority, candidate-to-organization/reviewer binding, and any reassignment operation remain unresolved. Candidate APIs and policy remain blocked. Candidate review assignment here is distinct from OAD-013 incident-response assignment. |
+| OAD-015 | Allowed decisions are `VERIFIED`, `REJECTED`, and `FURTHER_REVIEW`. Only `VERIFIED` creates exactly one authoritative `OPEN` `AccidentIncident`; the decision and creation are atomic and safe against duplicates/concurrency. `REJECTED` creates no incident. `FURTHER_REVIEW` creates no incident and preserves the candidate for subsequent review. | Current `CandidateReview` represents only final `VERIFIED`/`REJECTED`; its service cannot record `FURTHER_REVIEW` or return an under-review candidate for a subsequent review. DetectionEvent-to-candidate intake/grouping remains unresolved. |
+| OAD-012 / OAD-015 (cross-cutting audit acceptance) | Candidate assignment, review, decisions, and incident creation must have traceable audit records. | No dedicated candidate-assignment record/action exists; `FURTHER_REVIEW` cannot currently be audited as a decision. Audit reader, retention, and integrity governance remain open. No separate audit OAD is created. |
+
+**Disposition:** Mark only the policy slices above as `APPROVED`; OAD-005, OAD-012, and OAD-015 retain their existing overall status and identifiers because other questions in each remain unresolved. No other OAD is changed. In particular, OAD-013 continues to govern incident/Hospital-response assignment, not assignment of a candidate reviewer.
+
+## Project-Owner-Approved Candidate Intake and Assignment Addendum (2026-11-22)
+
+On 2026-11-22, the project owner approved the following additional policy slices. This addendum supplements the 2026-11-21 candidate-review approval; it does not reopen that approval, close an OAD, grant runtime permissions, or change any OAD identifier or overall status.
+
+| Existing OAD | Owner-approved scope | Still unresolved or implementation-blocked |
+|---|---|---|
+| OAD-005 / OAD-015 | The backend creates `AccidentCandidate` records from eligible `DetectionEvent`s. AI cannot independently verify an accident or select a reviewer. | The exact eligibility predicate, event grouping and duplicate policy remain unresolved. Production AI authentication and source-level authorization are separate security dependencies under OAD-017/OAD-019. |
+| OAD-019 / OAD-012 | Each authorized video source must have exactly one designated active Police organization. Candidate routing is determined by the backend. Missing, inactive, or non-unique routing must fail closed; the backend must not guess or accept a Police organization from the AI request. | The route’s persisted representation and the authority/process for maintaining or correcting the designation remain to be specified. Source authorization and production machine authentication remain separate gates. |
+| OAD-012 | An authorized user in the existing `ADMIN` group with active Police membership in the candidate’s assigned Police organization may assign the candidate to an active Police reviewer belonging to that same organization. | Runtime assignment records, server-side checks, and audit are absent. This approval grants no global Admin access and creates no new human role. Assignment cardinality and reassignment behavior remain unresolved. |
+
+**Disposition:** These approved slices are limited to candidate creation authority, backend Police routing, and the organization-scoped reviewer-assignment authority stated above. OAD-005, OAD-012, OAD-015, and OAD-019 retain their existing overall statuses. The event eligibility predicate, cross-event duplicate handling, route-maintenance authority, machine-authentication mechanism, and detailed `FURTHER_REVIEW` lifecycle remain open; do not treat the architecture recommendations for those details as approved.
 
 ## Decisions That Can Be Resolved from Current Requirements
 

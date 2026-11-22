@@ -1,4 +1,4 @@
-# Phase 5D — Incident Management Engineering Report
+# Incident Management Engineering Report
 
 **Status: PARTIALLY_COMPLETE**  
 **Repository:** `main`, baseline commit `c462063` (`feat(dashboard): implement role-based workspaces and integration tests`)  
@@ -10,7 +10,7 @@ Implemented a paginated, role-aware incident list and a read-only incident detai
 
 ## 2. Repository Audit
 
-- The working tree was clean on `main` at `c462063` before changes; no Phase 5C edits were pending.
+- The working tree was clean on `main` at `c462063` before changes; no dashboard-integration edits were pending.
 - Existing Flutter authentication, token refresh coordination, membership model, dashboard controller, and role shell were retained.
 - Django APIs are centralized under `backend/api/v1/`; incident behavior is in `apps.incidents`, assignment behavior in `apps.responses`, and read scoping in `api.v1.selectors` and domain policies.
 - Requirements, role matrix, incident workflow, ERD, and open architecture decisions were inspected. OAD-012 (candidate reviewer authority) remains TBD; OAD-020 (location policy) remains pending.
@@ -41,7 +41,7 @@ All listed human routes require a valid human JWT. Collections use DRF `LimitOff
 | `GET /api/v1/incidents/{id}/locations/` | Route exists; no location representation is currently available to the mobile client. | `PolicyNotConfigured`; returns 503. No location is embedded in incident summaries. |
 | `POST /api/v1/incidents/{id}/resolve/`, `POST /api/v1/incidents/{id}/close/` | Routes exist with no enabled request contract. | `PolicyNotConfigured`; returns 503. |
 
-Assignment acknowledge/start/activity/unable-to-respond/complete commands exist and use command IDs, but assignment lifecycle UI is excluded from this phase. Cancel and reassign are policy-blocked.
+Assignment acknowledge/start/activity/unable-to-respond/complete commands exist and use command IDs, but assignment lifecycle UI is excluded from this scope. Cancel and reassign are policy-blocked.
 
 ## 5. Authorization Matrix
 
@@ -66,7 +66,7 @@ Added a detail screen for the actual incident summary and permitted assignment s
 
 The incident-management screen explains that candidate queue, detail, and review APIs are policy-blocked (503). No candidate records or review actions are fabricated or submitted.
 
-## 9. Candidate Verification Implementation or Blocker
+## 9. Candidate Review Implementation Status
 
 **Blocked.** The domain service `verify_candidate` is transactional and idempotent, but the API route is disabled and OAD-012 leaves reviewer authority unresolved. The requirements matrix only proposes designated Admin review and explicitly leaves the decision TBD. No verification control is exposed and no backend policy was changed.
 
@@ -152,6 +152,6 @@ Changes are limited to Flutter incident UI/data/state wiring, Flutter tests, and
 - Incident count is for the backend's combined authorized membership scope; role/organization filtering occurs on bounded assignment pages in the client.
 - Live Flutter/PostgreSQL integration coverage remains unverified because the existing managed `.test` credential is unavailable without rotating it.
 
-## 25. Phase 5E Readiness
+## 25. Candidate Verification Readiness
 
-**Not ready to report Phase 5D complete.** The incident list/detail read experience and isolated regression coverage are implemented and validated. Phase 5D remains partial until candidate reviewer authority (OAD-012), evidence access scope, location policy, and incident resolve/close authority are approved and enabled, and the live role-specific integration run can use the existing dedicated test credentials.
+**Incident management is not ready to report as complete.** The incident list/detail read experience and isolated regression coverage are implemented and validated. Work remains partial until candidate reviewer authority (OAD-012), evidence access scope, location policy, and incident resolve/close authority are approved and enabled, and the live role-specific integration run can use the existing dedicated test credentials.

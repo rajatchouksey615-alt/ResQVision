@@ -18,7 +18,10 @@ from apps.incidents.models import (
     IncidentStatusHistory,
     ReviewDecision,
 )
-from apps.sources.models import VideoSourceAuthorizationStatus
+from apps.sources.models import (
+    VideoSourceAuthorizationStatus,
+    VideoSourceAvailabilityStatus,
+)
 from common.domain.actors import Actor, MachineActor
 from common.domain.authorization import require_ai_service, require_human, require_known_actor
 from common.domain.exceptions import (
@@ -67,10 +70,15 @@ def create_candidate(
             )
             if event is None:
                 raise ResourceNotFound("Detection event was not found.")
-            if event.video_source.authorization_status != VideoSourceAuthorizationStatus.AUTHORIZED:
-                raise AuthorizationDenied("The event source is no longer authorized.")
-            if not isinstance(actor, MachineActor):
-                require_authorized(policy, "candidate.create", actor, event)
+            require_authorized(policy, "candidate.create", actor, event)
+            source = event.video_source
+            if (
+                source.authorization_status != VideoSourceAuthorizationStatus.AUTHORIZED
+                or source.availability_status != VideoSourceAvailabilityStatus.AVAILABLE
+            ):
+                raise AuthorizationDenied(
+                    "The event source is not currently authorized and available."
+                )
             existing_link = (
                 CandidateDetectionEvent.objects.select_related("candidate")
                 .filter(detection_event=event)

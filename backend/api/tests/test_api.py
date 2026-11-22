@@ -1,4 +1,4 @@
-"""PostgreSQL-backed Phase 4 authentication, authorization, and API tests."""
+"""PostgreSQL-backed API authentication, authorization, and integration tests."""
 
 from uuid import uuid4
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 5B adds human authentication and secure session management to the Phase 5A foundation. Android is the primary target; Windows supports desktop development. Web is not generated. The SDK constraint is Dart `^3.11.1`.
+The Flutter client supports human authentication and secure session management. Android is the primary target; Windows supports desktop development. Web is not generated. The SDK constraint is Dart `^3.11.1`.
 
 ## Structure
 
@@ -52,12 +52,12 @@ test/
 
 ## Boundaries
 
-The backend remains the source of identity, authorization, and domain state. The mobile client must not connect directly to PostgreSQL or the AI service. Incident and assignment workflows, evidence, notifications, maps, and operational emergency dispatch remain outside Phase 5B. No real emergency service or agency is contacted.
+The backend remains the source of identity, authorization, and domain state. The mobile client must not connect directly to PostgreSQL or the AI service. Incident and assignment workflows, evidence, notifications, maps, and operational emergency dispatch remain outside the authentication feature. No real emergency service or agency is contacted.
 
 ## Local Development
 
 Pass the versioned API base URL with `--dart-define=API_BASE_URL=...`; see the [mobile README](../README.md) for Android emulator, Windows, and physical-device examples. The repository does not configure a custom Django HTTP port; Django's development server default is `8000`. Do not place secrets in compile-time configuration. The backend `.env` file is not consumed by Flutter.
 
-## Future Phase Handoff
+## Future Integration Work
 
 Later features should use the shared authenticated API client and backend contract. Client route guards support navigation only; they do not replace backend authorization.

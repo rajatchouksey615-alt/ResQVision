@@ -92,7 +92,7 @@ With the local PostgreSQL database available, run schema and test checks from `b
 .\.venv\Scripts\python.exe -m pip check
 ```
 
-`pytest.ini` selects `config.settings.test`. Tests use PostgreSQL and a separate test database. The Phase 3 suite contains 67 persistence/domain tests; Phase 4 adds API authentication, authorization, throttling, and integration tests. The latest PostgreSQL-backed run passed all 87 tests. The test-only password hasher, signing key, and isolated throttle cache are not deployment settings.
+`pytest.ini` selects `config.settings.test`. Tests use PostgreSQL and a separate test database. The backend has 67 persistence and domain-service tests; the API adds 20 authentication, authorization, throttling, and integration tests. The latest PostgreSQL-backed run passed all 87 tests. The test-only password hasher, signing key, and isolated throttle cache are not deployment settings.
 
 ## Implementation Boundaries
 
