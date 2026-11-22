@@ -9,7 +9,7 @@ import '../support/auth_test_support.dart';
 import '../support/dashboard_test_support.dart';
 
 void main() {
-  testWidgets('incident list shows backend data and the blocked review state', (
+  testWidgets('incident list shows backend incident data', (
     WidgetTester tester,
   ) async {
     final AuthHarness harness = await _incidentHarness();
@@ -21,11 +21,7 @@ void main() {
     expect(find.text('Police incidents'), findsOneWidget);
     expect(find.textContaining('Incident · 732dfcb2'), findsOneWidget);
     expect(find.text('Open'), findsOneWidget);
-    await tester.ensureVisible(find.text('Candidate review unavailable'));
-    expect(
-      find.textContaining('Reviewer authority remains unresolved in OAD-012'),
-      findsOneWidget,
-    );
+    expect(find.text('Candidate review unavailable'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

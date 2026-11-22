@@ -15,15 +15,25 @@ Compatibility was exercised in the project's isolated Python 3.14.10 environment
 | `ruff check .` and `ruff format --check .` | Passed across the backend |
 | `manage.py spectacular --validate` | Passed with zero schema errors or warnings |
 
-## Latest PostgreSQL Run — 2026-11-17
+## Backend Verification — 2026-11-22
 
 | Command | Result |
 |---|---|
-| `python -m pytest api/tests/test_api.py -q` | **20 passed** |
-| `python -m pytest -q` | **87 passed** |
-| `python manage.py showmigrations` | All listed migrations applied |
+| `python -m pytest -q` | **135 passed** |
+| `python -m ruff check .` | Passed |
+| `python manage.py makemigrations --check --dry-run` | Passed; no model changes or migration drift |
+| `python manage.py spectacular --file ../docs/api_documentation/openapi.yaml --validate` | Passed; OpenAPI generated from the implemented review API |
 
-The API suite uses PostgreSQL and covers JWT rotation/blacklisting, logout ownership, password-change revocation, scoped authorization, machine-authentication boundaries, throttling, and API integration behavior.
+The full backend suite uses PostgreSQL and includes assigned-candidate visibility, active membership and organization binding, review start, verified/rejected outcomes, audit attribution, command replay, and concurrent verification. The existing JWT, assignment, incident, machine-authentication, and throttle coverage also passed.
+
+## Flutter Verification — 2026-11-22
+
+| Command | Result |
+|---|---|
+| `flutter analyze --no-pub` | Passed; no issues found |
+| `flutter test --no-pub` | Passed; 74 tests passed and 7 live-backend integration cases were skipped |
+
+The seven environment-dependent live-backend integration cases were skipped because dedicated test server credentials and configuration were not present. Candidate review widget coverage exercises Police navigation, review start, verification retry with the same command ID, rejection rationale, data refresh, and the inactive-membership gate.
 
 ## Fixed Test Failures
 

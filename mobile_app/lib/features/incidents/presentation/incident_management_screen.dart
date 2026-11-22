@@ -165,8 +165,6 @@ class _IncidentManagementScreenState extends State<IncidentManagementScreen> {
                   ),
                 ),
             ],
-            const SizedBox(height: AppSpacing.lg),
-            const _CandidateReviewUnavailableCard(),
           ],
         ),
       ),
@@ -290,24 +288,6 @@ class _LoadMoreButton extends StatelessWidget {
             )
           : const Icon(Icons.expand_more),
       label: Text(controller.isLoadingMore ? 'Loading…' : 'Load next page'),
-    ),
-  );
-}
-
-class _CandidateReviewUnavailableCard extends StatelessWidget {
-  const _CandidateReviewUnavailableCard();
-
-  @override
-  Widget build(BuildContext context) => AppCard(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        const SectionHeading(title: 'Candidate review unavailable'),
-        const SizedBox(height: AppSpacing.sm),
-        const Text(
-          'Candidate queue, detail, and review endpoints are policy-blocked by the backend (503). Reviewer authority remains unresolved in OAD-012, so candidate verification is not available in this app.',
-        ),
-      ],
     ),
   );
 }

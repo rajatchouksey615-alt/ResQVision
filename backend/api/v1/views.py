@@ -19,7 +19,13 @@ from rest_framework_simplejwt.utils import get_md5_hash_password
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.detection.services import DetectionEventCommand, ingest_detection_event
-from apps.incidents.services import assign_candidate_reviewer, get_incident
+from apps.incidents.services import (
+    assign_candidate_reviewer,
+    begin_candidate_review,
+    get_incident,
+    reject_candidate,
+    verify_candidate,
+)
 from apps.notifications.services import mark_notification_read
 from apps.responses.services import (
     acknowledge_assignment,
@@ -36,7 +42,7 @@ from .actors import get_human_actor
 from .authentication import AIServiceAuthentication, EmailTokenObtainPairSerializer
 from .exceptions import EvidenceStorageUnavailable, MachineAuthenticationUnavailable
 from .permissions import IsAuthenticatedHuman, IsAuthenticatedMachine
-from .policies import AssignedIncidentReadPolicy
+from .policies import AssignedCandidateReviewPolicy, AssignedIncidentReadPolicy
 from .selectors import (
     active_memberships_for,
     visible_assignment_queryset,
@@ -52,10 +58,14 @@ from .serializers import (
     AssignmentSummarySerializer,
     AssignmentUnableSerializer,
     AuthenticatedUserSerializer,
+    CandidateDecisionInputSerializer,
+    CandidateRejectionInputSerializer,
+    CandidateReviewCommandResponseSerializer,
     CandidateReviewerAssignmentCommandResponseSerializer,
     CandidateReviewerAssignmentInputSerializer,
     CandidateReviewerAssignmentSerializer,
     CandidateSummarySerializer,
+    CandidateVerificationCommandResponseSerializer,
     CommandIDSerializer,
     DetectionEventCreatedSerializer,
     DetectionEventInputSerializer,
@@ -329,18 +339,108 @@ class CandidateAssociateEventsView(BlockedPolicyView):
         self._unavailable()
 
 
-class CandidateReviewView(BlockedPolicyView):
+class CandidateReviewView(APIView):
+    permission_classes = (IsAuthenticatedHuman,)
     throttle_classes = (ScopedRateThrottle,)
     throttle_scope = "sensitive"
 
     @extend_schema(
-        operation_id="candidates_review",
-        request=None,
-        responses={503: ErrorEnvelopeSerializer},
+        operation_id="candidates_review_start",
+        request=CommandIDSerializer,
+        responses={200: CandidateReviewCommandResponseSerializer, **API_ERROR_RESPONSES},
+        description=(
+            "Moves an assigned candidate from RECEIVED to UNDER_REVIEW. Replaying the same "
+            "command ID and intent returns the original result."
+        ),
     )
     def post(self, request, candidate_id):
-        del request, candidate_id
-        self._unavailable()
+        serializer = CommandIDSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            result = begin_candidate_review(
+                candidate_id=candidate_id,
+                actor=get_human_actor(request),
+                command_id=serializer.validated_data["command_id"],
+                policy=AssignedCandidateReviewPolicy(),
+            )
+        except AuthorizationDenied as exc:
+            raise NotFound from exc
+        return Response(
+            {
+                "data": CandidateSummarySerializer(result.value).data,
+                "replayed": result.replayed,
+            }
+        )
+
+
+class CandidateVerifyView(APIView):
+    permission_classes = (IsAuthenticatedHuman,)
+    throttle_classes = (ScopedRateThrottle,)
+    throttle_scope = "sensitive"
+
+    @extend_schema(
+        operation_id="candidates_verify",
+        request=CandidateDecisionInputSerializer,
+        responses={200: CandidateVerificationCommandResponseSerializer, **API_ERROR_RESPONSES},
+        description=(
+            "Records VERIFIED for the assigned reviewer and atomically creates one OPEN incident. "
+            "A verification rationale is optional under the current domain policy."
+        ),
+    )
+    def post(self, request, candidate_id):
+        serializer = CandidateDecisionInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            result = verify_candidate(
+                candidate_id=candidate_id,
+                actor=get_human_actor(request),
+                command_id=serializer.validated_data["command_id"],
+                rationale=serializer.validated_data.get("rationale", ""),
+                policy=AssignedCandidateReviewPolicy(),
+            )
+        except AuthorizationDenied as exc:
+            raise NotFound from exc
+        return Response(
+            {
+                "data": IncidentSummarySerializer(result.value).data,
+                "replayed": result.replayed,
+            }
+        )
+
+
+class CandidateRejectView(APIView):
+    permission_classes = (IsAuthenticatedHuman,)
+    throttle_classes = (ScopedRateThrottle,)
+    throttle_scope = "sensitive"
+
+    @extend_schema(
+        operation_id="candidates_reject",
+        request=CandidateRejectionInputSerializer,
+        responses={200: CandidateReviewCommandResponseSerializer, **API_ERROR_RESPONSES},
+        description=(
+            "Records REJECTED for the assigned reviewer. A nonblank rationale is required; "
+            "rejection does not create an incident."
+        ),
+    )
+    def post(self, request, candidate_id):
+        serializer = CandidateRejectionInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            result = reject_candidate(
+                candidate_id=candidate_id,
+                actor=get_human_actor(request),
+                command_id=serializer.validated_data["command_id"],
+                rationale=serializer.validated_data["rationale"],
+                policy=AssignedCandidateReviewPolicy(),
+            )
+        except AuthorizationDenied as exc:
+            raise NotFound from exc
+        return Response(
+            {
+                "data": CandidateSummarySerializer(result.value).data,
+                "replayed": result.replayed,
+            }
+        )
 
 
 class BlockedIncidentResolveView(BlockedPolicyView):

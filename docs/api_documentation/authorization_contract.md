@@ -9,6 +9,7 @@ Authorization is enforced by the backend on every request. Client visibility is 
 - Organization-scoped access requires an active membership, active organization, and membership group matching the organization kind.
 - Candidate assignment requires an active account in the existing `ADMIN` group plus active `POLICE` membership in the candidate's bound, active Police organization. The reviewer must be an active account with active Police membership in that same organization. `is_staff` and `is_superuser` do not grant assignment authority.
 - Candidate list and detail reads require the caller to be the recorded reviewer and to retain active Police membership in the assignment's organization. The assignment organization must still match the candidate's binding; other candidates return 404, including to ADMIN-group users.
+- Candidate review start, verification, and rejection use the same assigned-reviewer scope and recheck the active account, active Police organization, and active Police membership inside the locked domain command. Out-of-scope candidate command requests return 404. Review start is audited; the final review stores the reviewer, decision, timestamp, and permitted rationale. The decision audit records only safe command and incident identifiers.
 - Incident summaries and assignments are scoped to the user's active organization assignment. Cancelled/replaced assignments do not provide ongoing incident access. A detail outside scope returns 404.
 - Assignment acknowledgement, start, activity, inability-to-respond, and completion commands use the existing response services, which recheck membership and enforce state transitions. Activity kinds must match the target organization kind.
 - Notifications are selected by recipient user. Mark-read calls the existing notification service; another user's notification is reported as 404.
@@ -18,7 +19,7 @@ Authorization is enforced by the backend on every request. Client visibility is 
 
 These operations return a stable 503 policy/storage error and do not query the supplied object to determine whether it exists:
 
-- Candidate event association and review: their separate authority remains unresolved. Candidate list/detail now expose only active assignments as described above.
+- Candidate event association: authority remains unresolved. Candidate review start, verification, and rejection are enabled under the assigned-reviewer policy above. `FURTHER_REVIEW` has no runtime operation while its persistence and subsequent-review lifecycle remain unresolved.
 - Video source listing/detail/registration: source visibility and registration authority are unresolved under OAD-019.
 - Incident resolve and close: authority is unresolved under OAD-012 and OAD-018.
 - Assignment cancellation and reassignment: authority is unresolved under OAD-013/OAD-018.

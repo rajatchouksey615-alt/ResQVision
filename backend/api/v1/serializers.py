@@ -177,6 +177,16 @@ class CandidateReviewerAssignmentCommandResponseSerializer(serializers.Serialize
     replayed = serializers.BooleanField()
 
 
+class CandidateReviewCommandResponseSerializer(serializers.Serializer):
+    data = CandidateSummarySerializer()
+    replayed = serializers.BooleanField()
+
+
+class CandidateVerificationCommandResponseSerializer(serializers.Serializer):
+    data = IncidentSummarySerializer()
+    replayed = serializers.BooleanField()
+
+
 class ResponseActivityCommandResponseSerializer(serializers.Serializer):
     data = ResponseActivitySerializer()
     replayed = serializers.BooleanField()
@@ -198,6 +208,14 @@ class CommandIDSerializer(serializers.Serializer):
 
 class CandidateReviewerAssignmentInputSerializer(CommandIDSerializer):
     reviewer_id = serializers.UUIDField()
+
+
+class CandidateDecisionInputSerializer(CommandIDSerializer):
+    rationale = serializers.CharField(max_length=2000, required=False, allow_blank=True)
+
+
+class CandidateRejectionInputSerializer(CommandIDSerializer):
+    rationale = serializers.CharField(max_length=2000, allow_blank=False, trim_whitespace=True)
 
 
 class LogoutSerializer(serializers.Serializer):

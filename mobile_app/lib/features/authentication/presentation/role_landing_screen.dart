@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_spacing.dart';
+import '../../candidate_review/data/candidate_review_repository.dart';
 import '../../dashboard/data/dashboard_repository.dart';
 import '../../dashboard/presentation/dashboard_shell.dart';
 import '../../incidents/data/incident_repository.dart';
@@ -15,12 +16,14 @@ class RoleLandingScreen extends StatelessWidget {
     required this.user,
     required this.dashboardRepository,
     this.incidentRepository,
+    this.candidateReviewRepository,
   });
 
   final AuthSessionController session;
   final AuthenticatedUser user;
   final DashboardRepository? dashboardRepository;
   final IncidentRepository? incidentRepository;
+  final CandidateReviewRepository? candidateReviewRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +60,7 @@ class RoleLandingScreen extends StatelessWidget {
       user: user,
       repository: repository,
       incidentRepository: incidentRepository,
+      candidateReviewRepository: candidateReviewRepository,
     );
   }
 }

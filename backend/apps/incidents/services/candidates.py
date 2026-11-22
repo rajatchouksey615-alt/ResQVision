@@ -2,6 +2,7 @@
 
 from uuid import UUID
 
+from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 
 from apps.audit.models import AuditEvent
@@ -48,6 +49,16 @@ def _audit_denied(actor: Actor, resource_id: UUID | None, reason: str) -> None:
     )
 
 
+def _lock_active_human(actor: Actor):
+    human = require_human(actor)
+    reviewer = (
+        get_user_model().objects.select_for_update().filter(pk=human.pk, is_active=True).first()
+    )
+    if reviewer is None:
+        raise AuthorizationDenied("An active human account is required.")
+    return reviewer
+
+
 def create_candidate(
     *,
     detection_event_id: UUID,
@@ -89,13 +100,9 @@ def create_candidate(
                 return existing_link.candidate
             police_organization_id = source.designated_police_organization_id
             if police_organization_id is None:
-                raise AuthorizationDenied(
-                    "The event source has no designated Police organization."
-                )
+                raise AuthorizationDenied("The event source has no designated Police organization.")
             police_organization = (
-                Organization.objects.select_for_update()
-                .filter(pk=police_organization_id)
-                .first()
+                Organization.objects.select_for_update().filter(pk=police_organization_id).first()
             )
             if (
                 police_organization is None
@@ -249,8 +256,8 @@ def begin_candidate_review(
     *, candidate_id: UUID, actor: Actor, command_id: UUID, policy: AuthorizationPolicy | None = None
 ) -> CommandResult[AccidentCandidate]:
     try:
-        require_human(actor)
         with transaction.atomic():
+            _lock_active_human(actor)
             candidate = (
                 AccidentCandidate.objects.select_for_update().filter(pk=candidate_id).first()
             )
@@ -307,11 +314,19 @@ def _review_candidate(
 ) -> CommandResult[AccidentIncident | AccidentCandidate]:
     operation = "candidate.verify" if decision == ReviewDecision.VERIFIED else "candidate.reject"
     try:
-        reviewer = require_human(actor)
+        reviewer_id = require_human(actor).pk
         normalized_rationale = rationale.strip() if rationale and rationale.strip() else None
         if decision == ReviewDecision.REJECTED and normalized_rationale is None:
             raise InvalidStateTransition("A rejection rationale is required.")
         with transaction.atomic():
+            reviewer = (
+                get_user_model()
+                .objects.select_for_update()
+                .filter(pk=reviewer_id, is_active=True)
+                .first()
+            )
+            if reviewer is None:
+                raise AuthorizationDenied("An active human account is required.")
             candidate = (
                 AccidentCandidate.objects.select_for_update().filter(pk=candidate_id).first()
             )

@@ -11,6 +11,8 @@ import '../../authentication/data/models/authenticated_user.dart';
 import '../admin/admin_dashboard_screen.dart';
 import '../application/dashboard_controller.dart';
 import '../data/dashboard_repository.dart';
+import '../../candidate_review/data/candidate_review_repository.dart';
+import '../../candidate_review/presentation/candidate_review_screens.dart';
 import '../../incidents/data/incident_repository.dart';
 import '../../incidents/presentation/incident_management_screen.dart';
 import '../hospital/hospital_dashboard_screen.dart';
@@ -24,12 +26,14 @@ class DashboardShell extends StatefulWidget {
     required this.user,
     required this.repository,
     this.incidentRepository,
+    this.candidateReviewRepository,
   });
 
   final AuthSessionController session;
   final AuthenticatedUser user;
   final DashboardRepository repository;
   final IncidentRepository? incidentRepository;
+  final CandidateReviewRepository? candidateReviewRepository;
 
   @override
   State<DashboardShell> createState() => _DashboardShellState();
@@ -82,22 +86,30 @@ class _DashboardShellState extends State<DashboardShell> {
     return AnimatedBuilder(
       animation: _controller,
       builder: (BuildContext context, Widget? child) {
+        final bool includeCandidateReview =
+            _controller.selectedRole == DashboardRole.police;
+        final int sectionCount = includeCandidateReview ? 4 : 3;
+        final int selectedSection = _selectedSection < sectionCount
+            ? _selectedSection
+            : 0;
         return Scaffold(
           appBar: AppBar(title: const Text('ResQVision')),
           body: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
               final bool wide = constraints.maxWidth >= 720;
-              final Widget content = switch (_selectedSection) {
-                0 => _overviewForSelectedRole(),
-                1 => _incidentsForSelectedRole(),
-                _ => _ProfileSummary(user: widget.user),
-              };
+              final Widget content = _sectionContent(
+                selectedSection,
+                includeCandidateReview: includeCandidateReview,
+              );
               final Widget main = Column(
                 children: <Widget>[
                   _WorkspaceControls(
                     roles: _controller.roles,
                     selectedRole: _controller.selectedRole,
-                    onSelectRole: _controller.selectRole,
+                    onSelectRole: (DashboardRole role) {
+                      setState(() => _selectedSection = 0);
+                      _controller.selectRole(role);
+                    },
                     onSignOut: () => unawaited(widget.session.logout()),
                   ),
                   Expanded(child: content),
@@ -114,23 +126,29 @@ class _DashboardShellState extends State<DashboardShell> {
               return Row(
                 children: <Widget>[
                   NavigationRail(
-                    selectedIndex: _selectedSection,
+                    selectedIndex: selectedSection,
                     labelType: NavigationRailLabelType.all,
                     onDestinationSelected: (int value) => setState(() {
                       _selectedSection = value;
                     }),
-                    destinations: const <NavigationRailDestination>[
-                      NavigationRailDestination(
+                    destinations: <NavigationRailDestination>[
+                      const NavigationRailDestination(
                         icon: Icon(Icons.dashboard_outlined),
                         selectedIcon: Icon(Icons.dashboard),
                         label: Text('Overview'),
                       ),
-                      NavigationRailDestination(
+                      if (includeCandidateReview)
+                        const NavigationRailDestination(
+                          icon: Icon(Icons.fact_check_outlined),
+                          selectedIcon: Icon(Icons.fact_check),
+                          label: Text('Candidates'),
+                        ),
+                      const NavigationRailDestination(
                         icon: Icon(Icons.car_crash_outlined),
                         selectedIcon: Icon(Icons.car_crash),
                         label: Text('Incidents'),
                       ),
-                      NavigationRailDestination(
+                      const NavigationRailDestination(
                         icon: Icon(Icons.person_outline),
                         selectedIcon: Icon(Icons.person),
                         label: Text('Profile'),
@@ -145,17 +163,23 @@ class _DashboardShellState extends State<DashboardShell> {
           ),
           bottomNavigationBar: MediaQuery.sizeOf(context).width < 720
               ? NavigationBar(
-                  selectedIndex: _selectedSection,
+                  selectedIndex: selectedSection,
                   onDestinationSelected: (int value) => setState(() {
                     _selectedSection = value;
                   }),
-                  destinations: const <NavigationDestination>[
+                  destinations: <NavigationDestination>[
                     NavigationDestination(
                       icon: Icon(Icons.dashboard_outlined),
                       selectedIcon: Icon(Icons.dashboard),
                       label: 'Overview',
                     ),
-                    NavigationDestination(
+                    if (includeCandidateReview)
+                      const NavigationDestination(
+                        icon: Icon(Icons.fact_check_outlined),
+                        selectedIcon: Icon(Icons.fact_check),
+                        label: 'Candidates',
+                      ),
+                    const NavigationDestination(
                       icon: Icon(Icons.car_crash_outlined),
                       selectedIcon: Icon(Icons.car_crash),
                       label: 'Incidents',
@@ -171,6 +195,32 @@ class _DashboardShellState extends State<DashboardShell> {
         );
       },
     );
+  }
+
+  Widget _sectionContent(int section, {required bool includeCandidateReview}) {
+    if (section == 0) return _overviewForSelectedRole();
+    if (includeCandidateReview && section == 1) {
+      final CandidateReviewRepository? candidateRepository =
+          widget.candidateReviewRepository;
+      if (candidateRepository == null) {
+        return const Center(
+          child: AppEmptyState(
+            title: 'Candidate review unavailable',
+            message:
+                'The authenticated candidate review service is not configured.',
+            icon: Icons.lock_outline,
+          ),
+        );
+      }
+      return CandidateReviewListScreen(
+        repository: candidateRepository,
+        memberships: widget.user.memberships,
+        onDecision: _controller.refresh,
+      );
+    }
+    final int incidentSection = includeCandidateReview ? 2 : 1;
+    if (section == incidentSection) return _incidentsForSelectedRole();
+    return _ProfileSummary(user: widget.user);
   }
 
   Widget _overviewForSelectedRole() {

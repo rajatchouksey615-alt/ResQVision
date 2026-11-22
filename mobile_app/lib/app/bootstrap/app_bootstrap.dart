@@ -12,6 +12,7 @@ import '../../core/networking/authenticated_api_client.dart';
 import '../../core/security/flutter_token_storage.dart';
 import '../../features/authentication/application/auth_session_controller.dart';
 import '../../features/authentication/data/auth_repository.dart';
+import '../../features/candidate_review/data/candidate_review_repository.dart';
 import '../../features/dashboard/data/dashboard_repository.dart';
 import '../../features/incidents/data/incident_repository.dart';
 import '../app.dart';
@@ -24,6 +25,7 @@ Future<void> bootstrap({AppConfig Function()? loadConfiguration}) async {
   AuthSessionController? sessionController;
   DashboardRepository? dashboardRepository;
   IncidentRepository? incidentRepository;
+  CandidateReviewRepository? candidateReviewRepository;
 
   try {
     final AppConfig loadedConfig =
@@ -43,6 +45,9 @@ Future<void> bootstrap({AppConfig Function()? loadConfiguration}) async {
       apiClient: authenticatedApiClient,
     );
     incidentRepository = IncidentRepository(apiClient: authenticatedApiClient);
+    candidateReviewRepository = CandidateReviewRepository(
+      apiClient: authenticatedApiClient,
+    );
     unawaited(sessionController.restoreSession());
     logger.info('app.startup.ready');
   } on AppException catch (error) {
@@ -60,6 +65,7 @@ Future<void> bootstrap({AppConfig Function()? loadConfiguration}) async {
       sessionController: sessionController,
       dashboardRepository: dashboardRepository,
       incidentRepository: incidentRepository,
+      candidateReviewRepository: candidateReviewRepository,
     ),
   );
 }

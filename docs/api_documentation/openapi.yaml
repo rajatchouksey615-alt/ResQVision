@@ -1201,10 +1201,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
           description: ''
-  /api/v1/candidates/{candidate_id}/review/:
+  /api/v1/candidates/{candidate_id}/reject/:
     post:
-      operationId: candidates_review
-      description: Base for endpoints held behind an unresolved authorization decision.
+      operationId: candidates_reject
+      description: Records REJECTED for the assigned reviewer. A nonblank rationale
+        is required; rejection does not create an incident.
       parameters:
       - in: path
         name: candidate_id
@@ -1214,9 +1215,236 @@ paths:
         required: true
       tags:
       - candidates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CandidateRejectionInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CandidateRejectionInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CandidateRejectionInput'
+        required: true
       security:
       - jwtAuth: []
       responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateReviewCommandResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '413':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+  /api/v1/candidates/{candidate_id}/review/:
+    post:
+      operationId: candidates_review_start
+      description: Moves an assigned candidate from RECEIVED to UNDER_REVIEW. Replaying
+        the same command ID and intent returns the original result.
+      parameters:
+      - in: path
+        name: candidate_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - candidates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommandID'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommandID'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommandID'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateReviewCommandResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '413':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+  /api/v1/candidates/{candidate_id}/verify/:
+    post:
+      operationId: candidates_verify
+      description: Records VERIFIED for the assigned reviewer and atomically creates
+        one OPEN incident. A verification rationale is optional under the current
+        domain policy.
+      parameters:
+      - in: path
+        name: candidate_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - candidates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CandidateDecisionInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CandidateDecisionInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CandidateDecisionInput'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateVerificationCommandResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '413':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
         '503':
           content:
             application/json:
@@ -1882,6 +2110,39 @@ components:
       - last_name
       - memberships
       - roles
+    CandidateDecisionInput:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        rationale:
+          type: string
+          maxLength: 2000
+      required:
+      - command_id
+    CandidateRejectionInput:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        rationale:
+          type: string
+          maxLength: 2000
+      required:
+      - command_id
+      - rationale
+    CandidateReviewCommandResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/CandidateSummary'
+        replayed:
+          type: boolean
+      required:
+      - data
+      - replayed
     CandidateReviewerAssignment:
       type: object
       properties:
@@ -1985,6 +2246,16 @@ components:
         * `UNDER_REVIEW` - Under review
         * `VERIFIED` - Verified
         * `REJECTED` - Rejected
+    CandidateVerificationCommandResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/IncidentSummary'
+        replayed:
+          type: boolean
+      required:
+      - data
+      - replayed
     CommandID:
       type: object
       properties:

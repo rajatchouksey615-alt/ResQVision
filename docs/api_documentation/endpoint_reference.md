@@ -44,8 +44,10 @@ Writes call `apps.responses.services.assignments`. Command responses contain `da
 | GET | `/candidates/` | Active assigned Police reviewer | Lists only candidates assigned to the caller in their active Police organization |
 | GET | `/candidates/{candidate_id}/` | Active assigned Police reviewer | Assigned candidate detail; out-of-scope is 404 |
 | POST | `/candidates/{candidate_id}/assignment/` | ADMIN-group user with active membership in the candidate Police organization | Assigns one active same-organization Police reviewer; body has `reviewer_id` and `command_id` |
+| POST | `/candidates/{candidate_id}/review/` | Specifically assigned reviewer with active Police membership | Starts review; body has `command_id`; only `RECEIVED` can enter `UNDER_REVIEW` |
+| POST | `/candidates/{candidate_id}/verify/` | Specifically assigned reviewer with active Police membership | Records `VERIFIED` and atomically creates one `OPEN` incident; body has `command_id` and optional `rationale` |
+| POST | `/candidates/{candidate_id}/reject/` | Specifically assigned reviewer with active Police membership | Records `REJECTED` without creating an incident; body has `command_id` and required nonblank `rationale` |
 | POST | `/candidates/{candidate_id}/associate-events/` | Human | 503 until association authority is approved |
-| POST | `/candidates/{candidate_id}/review/` | Human | 503 pending separate candidate review authority |
 | GET | `/video-sources/` | Human | 503 until source read scope is approved |
 | POST | `/video-sources/` | Human | 503 until source registration authority is approved |
 | GET | `/video-sources/{source_id}/` | Human | 503 until source read scope is approved |
@@ -62,5 +64,7 @@ Writes call `apps.responses.services.assignments`. Command responses contain `da
 Collections use `limit` and `offset`; default limit is 25 and maximum is 100. `status` is the only currently exposed collection filter. Do not send arbitrary model field names or ordering clauses.
 
 Domain command writes require a UUID `command_id`. Retry with the same command ID and same intent after an uncertain response. A reused command ID with different intent returns `409 idempotency_conflict`. Candidate reviewer assignment is one-time; another assignment request returns `409 resource_conflict`, with no reassignment or unassignment route. Passwords, refresh tokens, and access tokens are never sent in URL parameters.
+
+Candidate review and final decisions recheck the assigned reviewer, active account, active Police organization, and active Police membership on each request. Out-of-scope candidate IDs return 404. A reviewer can record only one final decision; a decision command replay with the same command ID and intent returns its prior result. `FURTHER_REVIEW` is not an available operation.
 
 The OpenAPI schema at `/schema/` is generated from the implementation and is also committed as [`openapi.yaml`](openapi.yaml). See the [authentication](authentication_contract.md), [authorization](authorization_contract.md), and [error](error_handling.md) contracts for detailed rules.
