@@ -20,21 +20,23 @@ Base prefix: `/api/v1/`. JSON timestamps are timezone-aware ISO 8601. Protected 
 
 | Method | Path | Access | Current behavior |
 |---|---|---|---|
-| GET | `/incidents/` | Human bearer token | Assignment-scoped incident summaries; optional allow-listed `status` filter |
-| GET | `/incidents/{incident_id}/` | Human bearer token | Assignment-scoped summary; out-of-scope is 404 |
+| GET | `/incidents/` | Human bearer token | Assignment-scoped incident summaries; optional allow-listed `status` filter. Hospital users see incidents assigned to their active Hospital memberships |
+| GET | `/incidents/{incident_id}/` | Human bearer token | Minimum assignment-scoped summary; out-of-scope is 404 |
 | POST | `/incidents/{incident_id}/resolve/` | Human bearer token | 503 until resolution authority is approved |
 | POST | `/incidents/{incident_id}/close/` | Human bearer token | 503 until closure authority is approved |
-| GET | `/incidents/{incident_id}/assignments/` | Human bearer token | Only assignments visible to the caller’s active organization membership |
-| GET | `/assignments/{assignment_id}/` | Human bearer token | Own organization assignment; out-of-scope is 404 |
-| POST | `/assignments/{assignment_id}/acknowledge/` | Assigned organization | Acknowledges with `{"command_id":"<uuid>"}` |
-| POST | `/assignments/{assignment_id}/start/` | Assigned organization | Starts simulated response; body has `command_id` and optional `details` |
-| POST | `/assignments/{assignment_id}/activities/` | Assigned organization | Body has `command_id`, `activity_kind`, optional `details` |
-| POST | `/assignments/{assignment_id}/unable-to-respond/` | Assigned organization | Body has `command_id` and required `reason` |
-| POST | `/assignments/{assignment_id}/complete/` | Assigned organization | Body has `command_id` and required `details` |
+| GET | `/incidents/{incident_id}/assignments/` | Human bearer token | Only assignments visible to the caller’s active organization membership; a parent incident outside the caller’s current scope returns 404 |
+| GET | `/assignments/{assignment_id}/` | Human bearer token | Own organization assignment; current matching membership is checked; out-of-scope is 404 |
+| POST | `/assignments/{assignment_id}/acknowledge/` | Assigned organization | Police-target commands use the existing service; Hospital-target commands return 503 `policy_unavailable` pending OAD-018 |
+| POST | `/assignments/{assignment_id}/start/` | Assigned organization | Police-target commands use the existing service; Hospital-target commands return 503 `policy_unavailable` pending OAD-018 |
+| POST | `/assignments/{assignment_id}/activities/` | Assigned organization | Police-target commands use the existing service; Hospital-target commands return 503 `policy_unavailable` pending OAD-018 |
+| POST | `/assignments/{assignment_id}/unable-to-respond/` | Assigned organization | Police-target commands use the existing service; Hospital-target commands return 503 `policy_unavailable` pending OAD-018 |
+| POST | `/assignments/{assignment_id}/complete/` | Assigned organization | Police-target commands use the existing service; Hospital-target commands return 503 `policy_unavailable` pending OAD-018 |
 | POST | `/assignments/{assignment_id}/cancel/` | Human bearer token | 503 until cancellation authority is approved |
 | POST | `/assignments/{assignment_id}/reassign/` | Human bearer token | 503 until reassignment authority is approved |
 
-Writes call `apps.responses.services.assignments`. Command responses contain `data` and `replayed`. Each agency assignment and history remains independent; a command does not send a real notification or dispatch a responder.
+Writes call `apps.responses.services.assignments`. Command responses contain `data` and `replayed`. Each agency assignment and history remains independent; a command does not send a real notification or dispatch a responder. The Hospital Flutter workspace is read-only: it lists the caller’s assigned incidents and shows the minimum incident summary and Hospital assignment status. Hospital writes remain unavailable until OAD-018 approves the lifecycle, actors, and transitions. Evidence and location remain unavailable.
+
+No response-assignment creation endpoint is exposed. `create_assignment` requires an injected authorization policy and the production default denies it; OAD-013 has not approved who selects/designates the Hospital or who may create/reassign the assignment. The API must stay fail-closed until that policy is recorded. Hospital response detail beyond the existing assignment summary, including a distinct simulated dispatch decision/status model, is also unresolved under OAD-018.
 
 ## Detection, Candidates, Sources, Evidence, Locations, Notifications
 

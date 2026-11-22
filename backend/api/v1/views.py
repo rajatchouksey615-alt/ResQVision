@@ -567,6 +567,18 @@ class IncidentListView(generics.ListAPIView):
     serializer_class = IncidentSummarySerializer
     permission_classes = (IsAuthenticatedHuman,)
 
+    @extend_schema(
+        operation_id="incidents_list",
+        responses={200: IncidentSummarySerializer(many=True), **API_ERROR_RESPONSES},
+        description=(
+            "Lists only incidents with an active assignment to an organization where the "
+            "authenticated user has active matching membership. Hospital members see only "
+            "incidents assigned to their active Hospital organization memberships."
+        ),
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
     def get_queryset(self):
         params = IncidentStatusQuerySerializer(data=self.request.query_params)
         params.is_valid(raise_exception=True)
@@ -582,6 +594,10 @@ class IncidentDetailView(APIView):
     @extend_schema(
         operation_id="incidents_retrieve",
         responses={200: IncidentSummarySerializer, **API_ERROR_RESPONSES},
+        description=(
+            "Returns the minimum incident summary only when the authenticated user retains an "
+            "active matching membership in an organization assigned to the incident."
+        ),
     )
     def get(self, request, incident_id):
         user = get_human_actor(request).user
@@ -601,10 +617,29 @@ class IncidentAssignmentsView(generics.ListAPIView):
     serializer_class = AssignmentSummarySerializer
     permission_classes = (IsAuthenticatedHuman,)
 
+    @extend_schema(
+        operation_id="incidents_assignments_list",
+        responses={200: AssignmentSummarySerializer(many=True), **API_ERROR_RESPONSES},
+        description=(
+            "Lists only assignments whose target organization has a current active matching "
+            "membership for the authenticated user. A Hospital user cannot read another "
+            "organization's assignment; an incident outside the caller's current scope returns "
+            "404."
+        ),
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
     def get_queryset(self):
-        return visible_assignment_queryset(get_human_actor(self.request).user).filter(
-            incident_id=self.kwargs["incident_id"]
+        user = get_human_actor(self.request).user
+        # Conceal the parent incident when the caller has no current assignment
+        # scope to it. Filtering only the child assignments would otherwise turn
+        # this endpoint into an out-of-scope incident ID existence oracle.
+        get_object_or_404(
+            visible_incident_queryset(user),
+            pk=self.kwargs["incident_id"],
         )
+        return visible_assignment_queryset(user).filter(incident_id=self.kwargs["incident_id"])
 
 
 class AssignmentDetailView(APIView):
@@ -613,6 +648,10 @@ class AssignmentDetailView(APIView):
     @extend_schema(
         operation_id="assignments_retrieve",
         responses={200: AssignmentSummarySerializer, **API_ERROR_RESPONSES},
+        description=(
+            "Returns an assignment only to a user with an active matching membership in its "
+            "target organization."
+        ),
     )
     def get(self, request, assignment_id):
         assignment = get_object_or_404(
@@ -649,6 +688,11 @@ class AssignmentAcknowledgeView(APIView):
         operation_id="assignments_acknowledge",
         request=CommandIDSerializer,
         responses={200: AssignmentCommandResponseSerializer, **API_ERROR_RESPONSES},
+        description=(
+            "Acknowledges the caller's active organization assignment through the existing "
+            "response service. Hospital-target updates return 503 until OAD-018 approves the "
+            "Hospital lifecycle and actor authority."
+        ),
     )
     def post(self, request, assignment_id):
         _assignment_for_request(request, assignment_id)
@@ -672,6 +716,11 @@ class AssignmentStartView(APIView):
         operation_id="assignments_start",
         request=AssignmentStartSerializer,
         responses={200: AssignmentCommandResponseSerializer, **API_ERROR_RESPONSES},
+        description=(
+            "Moves the caller's active assignment to IN_PROGRESS through the existing response "
+            "service. Hospital-target updates return 503 until OAD-018 approves the Hospital "
+            "lifecycle and actor authority."
+        ),
     )
     def post(self, request, assignment_id):
         _assignment_for_request(request, assignment_id)
@@ -697,6 +746,11 @@ class AssignmentActivityView(APIView):
         operation_id="assignments_record_activity",
         request=ResponseActivityInputSerializer,
         responses={201: ResponseActivityCommandResponseSerializer, **API_ERROR_RESPONSES},
+        description=(
+            "Records an activity on the caller's active organization assignment. Activity kinds "
+            "are checked against the target organization kind, and each accepted activity is "
+            "audited. Hospital-target updates return 503 until OAD-018 is approved."
+        ),
     )
     def post(self, request, assignment_id):
         _assignment_for_request(request, assignment_id)
@@ -726,6 +780,11 @@ class AssignmentUnableView(APIView):
         operation_id="assignments_unable_to_respond",
         request=AssignmentUnableSerializer,
         responses={200: AssignmentCommandResponseSerializer, **API_ERROR_RESPONSES},
+        description=(
+            "Records that the caller's active organization assignment cannot be handled. A "
+            "nonblank reason is required. Hospital-target updates return 503 until OAD-018 is "
+            "approved."
+        ),
     )
     def post(self, request, assignment_id):
         _assignment_for_request(request, assignment_id)
@@ -751,6 +810,11 @@ class AssignmentCompleteView(APIView):
         operation_id="assignments_complete",
         request=AssignmentCompleteSerializer,
         responses={200: AssignmentCommandResponseSerializer, **API_ERROR_RESPONSES},
+        description=(
+            "Completes the caller's active organization assignment when permitted by the "
+            "existing response service. A nonblank completion detail is required. Hospital-"
+            "target updates return 503 until OAD-018 is approved."
+        ),
     )
     def post(self, request, assignment_id):
         _assignment_for_request(request, assignment_id)

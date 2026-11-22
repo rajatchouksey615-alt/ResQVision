@@ -12,6 +12,7 @@ Authorization is enforced by the backend on every request. Client visibility is 
 - Candidate review start, verification, and rejection use the same assigned-reviewer scope and recheck the active account, active Police organization, and active Police membership inside the locked domain command. Out-of-scope candidate command requests return 404. Review start is audited; the final review stores the reviewer, decision, timestamp, and permitted rationale. The decision audit records only safe command and incident identifiers.
 - Incident summaries and assignments are scoped to the user's active organization assignment. Cancelled/replaced assignments do not provide ongoing incident access. A detail outside scope returns 404.
 - Assignment acknowledgement, start, activity, inability-to-respond, and completion commands use the existing response services, which recheck membership and enforce state transitions. Activity kinds must match the target organization kind.
+- Hospital users may read assignment-scoped incident and assignment summaries with current active membership in the exact active Hospital organization. Hospital status and activity writes fail closed with `503 policy_unavailable` at the domain-service boundary until OAD-018 approves the Hospital lifecycle, permitted actors, and transitions. Existing Police response behavior remains unchanged.
 - Notifications are selected by recipient user. Mark-read calls the existing notification service; another user's notification is reported as 404.
 - Collection authorization is applied before pagination. Only explicit `status` filters are accepted for incidents and notifications.
 
@@ -26,6 +27,7 @@ These operations return a stable 503 policy/storage error and do not query the s
 - Evidence metadata listing/detail: role-specific evidence fields and access policy remain unresolved. Upload-session operations are unavailable because no storage provider/verifier is configured.
 - Location provenance reads: precision and role scope remain unresolved under OAD-020.
 - Response assignment creation: no HTTP route is exposed because creation authority remains unresolved under OAD-013. Candidate reviewer assignment is a separate, organization-scoped command.
+- Hospital target selection/designation, Hospital assignment creation authority, reassignment, and Hospital response updates are unresolved under OAD-013/OAD-018. Do not infer assignment creation or update permission from HOSPITAL, ADMIN, staff, superuser, or membership labels. The assignment creation service remains deny-by-default unless a caller supplies an approved policy; Hospital response commands remain unavailable.
 - Audit event listing, user registration, user/role administration, and emergency dispatch have no public API route.
 
 ## Machine Scope

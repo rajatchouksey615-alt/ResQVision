@@ -65,6 +65,13 @@ def _eligible_target(target: Organization) -> bool:
     }
 
 
+def _require_response_update_policy(assignment: ResponseAssignment) -> None:
+    if assignment.target_organization.organization_kind == OrganizationKind.HOSPITAL:
+        raise PolicyNotConfigured(
+            "Hospital response update authority and lifecycle are not approved."
+        )
+
+
 def create_assignment(
     *,
     incident_id: UUID,
@@ -224,19 +231,23 @@ def _transition_assignment(
         user = require_human(actor)
         with transaction.atomic():
             incident, assignment = _locked_assignment(assignment_id)
-            if to_status == AssignmentStatus.CANCELLED:
-                require_authorized(policy, operation, actor, assignment)
-            require_membership(
-                actor,
-                assignment.target_organization,
-                expected_role=assignment.target_organization.organization_kind,
-            )
-            if to_status == AssignmentStatus.IN_PROGRESS:
-                activity_kind = (
-                    ResponseActivityKind.READINESS_UPDATE
-                    if assignment.target_organization.organization_kind == OrganizationKind.HOSPITAL
-                    else ResponseActivityKind.PROGRESS_UPDATE
+            if assignment.target_organization.organization_kind == OrganizationKind.HOSPITAL:
+                require_membership(
+                    actor,
+                    assignment.target_organization,
+                    expected_role=assignment.target_organization.organization_kind,
                 )
+                _require_response_update_policy(assignment)
+            else:
+                if to_status == AssignmentStatus.CANCELLED:
+                    require_authorized(policy, operation, actor, assignment)
+                require_membership(
+                    actor,
+                    assignment.target_organization,
+                    expected_role=assignment.target_organization.organization_kind,
+                )
+            if to_status == AssignmentStatus.IN_PROGRESS:
+                activity_kind = ResponseActivityKind.PROGRESS_UPDATE
             prior = _prior_history(
                 command_id=command_id,
                 assignment=assignment,
@@ -404,6 +415,8 @@ def record_response_activity(
             raise InvalidStateTransition("Response details are too long.")
         with transaction.atomic():
             incident, assignment = _locked_assignment(assignment_id)
+            require_membership(actor, assignment.target_organization)
+            _require_response_update_policy(assignment)
             prior = Response.objects.filter(command_id=command_id).first()
             if prior:
                 if (
@@ -414,7 +427,6 @@ def record_response_activity(
                 ):
                     raise IdempotencyConflict("Response command identifier has different intent.")
                 return CommandResult(prior, replayed=True)
-            require_membership(actor, assignment.target_organization)
             if assignment.status not in {
                 AssignmentStatus.ACKNOWLEDGED,
                 AssignmentStatus.IN_PROGRESS,
@@ -454,7 +466,7 @@ def record_response_activity(
                 },
             )
             return CommandResult(response)
-    except AuthorizationDenied, InvalidStateTransition, IdempotencyConflict:
+    except AuthorizationDenied, PolicyNotConfigured, InvalidStateTransition, IdempotencyConflict:
         _audit_denied(actor, assignment_id, "assignment.activity")
         raise
     except IntegrityError as exc:

@@ -217,6 +217,8 @@ paths:
   /api/v1/assignments/{assignment_id}/:
     get:
       operationId: assignments_retrieve
+      description: Returns an assignment only to a user with an active matching membership
+        in its target organization.
       parameters:
       - in: path
         name: assignment_id
@@ -286,6 +288,9 @@ paths:
   /api/v1/assignments/{assignment_id}/acknowledge/:
     post:
       operationId: assignments_acknowledge
+      description: Acknowledges the caller's active organization assignment through
+        the existing response service. Hospital-target updates return 503 until OAD-018
+        approves the Hospital lifecycle and actor authority.
       parameters:
       - in: path
         name: assignment_id
@@ -367,6 +372,10 @@ paths:
   /api/v1/assignments/{assignment_id}/activities/:
     post:
       operationId: assignments_record_activity
+      description: Records an activity on the caller's active organization assignment.
+        Activity kinds are checked against the target organization kind, and each
+        accepted activity is audited. Hospital-target updates return 503 until OAD-018
+        is approved.
       parameters:
       - in: path
         name: assignment_id
@@ -470,6 +479,9 @@ paths:
   /api/v1/assignments/{assignment_id}/complete/:
     post:
       operationId: assignments_complete
+      description: Completes the caller's active organization assignment when permitted
+        by the existing response service. A nonblank completion detail is required.
+        Hospital-target updates return 503 until OAD-018 is approved.
       parameters:
       - in: path
         name: assignment_id
@@ -573,6 +585,9 @@ paths:
   /api/v1/assignments/{assignment_id}/start/:
     post:
       operationId: assignments_start
+      description: Moves the caller's active assignment to IN_PROGRESS through the
+        existing response service. Hospital-target updates return 503 until OAD-018
+        approves the Hospital lifecycle and actor authority.
       parameters:
       - in: path
         name: assignment_id
@@ -654,6 +669,9 @@ paths:
   /api/v1/assignments/{assignment_id}/unable-to-respond/:
     post:
       operationId: assignments_unable_to_respond
+      description: Records that the caller's active organization assignment cannot
+        be handled. A nonblank reason is required. Hospital-target updates return
+        503 until OAD-018 is approved.
       parameters:
       - in: path
         name: assignment_id
@@ -1528,6 +1546,9 @@ paths:
   /api/v1/incidents/:
     get:
       operationId: incidents_list
+      description: Lists only incidents with an active assignment to an organization
+        where the authenticated user has active matching membership. Hospital members
+        see only incidents assigned to their active Hospital organization memberships.
       parameters:
       - name: limit
         required: false
@@ -1552,9 +1573,60 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedIncidentSummaryList'
           description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '413':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
   /api/v1/incidents/{incident_id}/:
     get:
       operationId: incidents_retrieve
+      description: Returns the minimum incident summary only when the authenticated
+        user retains an active matching membership in an organization assigned to
+        the incident.
       parameters:
       - in: path
         name: incident_id
@@ -1624,6 +1696,10 @@ paths:
   /api/v1/incidents/{incident_id}/assignments/:
     get:
       operationId: incidents_assignments_list
+      description: Lists only assignments whose target organization has a current
+        active matching membership for the authenticated user. A Hospital user cannot
+        read another organization's assignment; an incident outside the caller's current
+        scope returns 404.
       parameters:
       - in: path
         name: incident_id
@@ -1653,6 +1729,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAssignmentSummaryList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '413':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
           description: ''
   /api/v1/incidents/{incident_id}/close/:
     post:

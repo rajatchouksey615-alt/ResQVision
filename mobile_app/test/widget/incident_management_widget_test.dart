@@ -94,6 +94,80 @@ void main() {
     expect(find.text('Load next page'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'Hospital sees its scoped assignment status and keeps evidence hidden',
+    (WidgetTester tester) async {
+      const String assignmentStatus = 'ACKNOWLEDGED';
+      final AuthHarness harness = AuthHarness(
+        transport: ScriptedTransport((request) async {
+          if (request.uri.path == '/api/v1/auth/me/') {
+            return jsonApiResponse(
+              200,
+              dashboardProfile(
+                roles: const <String>['HOSPITAL'],
+                memberships: <Map<String, Object?>>[hospitalMembership()],
+              ),
+            );
+          }
+          if (request.uri.path == '/api/v1/incidents/') {
+            return pageResponse(results: <Map<String, Object?>>[incident()]);
+          }
+          if (request.uri.path == '/api/v1/incidents/$firstIncidentId/') {
+            return jsonApiResponse(200, incident());
+          }
+          if (request.uri.path ==
+              '/api/v1/incidents/$firstIncidentId/assignments/') {
+            return pageResponse(
+              results: <Map<String, Object?>>[
+                assignment(
+                  id: hospitalAssignmentId,
+                  organizationId: hospitalOrganizationId,
+                  organizationKind: 'HOSPITAL',
+                  status: assignmentStatus,
+                ),
+              ],
+            );
+          }
+          throw StateError('Unexpected request path: ${request.uri.path}');
+        }),
+      );
+      harness.storage.tokens = AuthTokens.fromJson(loginTokens);
+      await harness.session.restoreSession();
+      addTearDown(harness.close);
+
+      await tester.pumpWidget(_hospitalScreen(harness));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('View details →'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Central Hospital'), findsOneWidget);
+      expect(find.text('HOSPITAL · Acknowledged'), findsOneWidget);
+      expect(find.text('Accept assignment'), findsNothing);
+      expect(find.text('Update readiness'), findsNothing);
+      expect(find.text('Complete assignment'), findsNothing);
+      expect(find.text('Unable to respond'), findsNothing);
+      await tester.dragUntilVisible(
+        find.text('Location information unavailable'),
+        find.byType(ListView).last,
+        const Offset(0, -300),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Location information unavailable'), findsOneWidget);
+      expect(find.text('Evidence information unavailable'), findsOneWidget);
+      expect(
+        harness.transport.requests.any(
+          (ApiRequest request) => request.method == 'POST',
+        ),
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+      expect(find.text('Central Hospital · Acknowledged'), findsOneWidget);
+    },
+  );
 }
 
 Future<AuthHarness> _incidentHarness({bool withNextPage = false}) async {
@@ -160,6 +234,15 @@ Widget _screen(AuthHarness harness) => MaterialApp(
   home: IncidentManagementScreen(
     repository: harness.incidentRepository,
     role: DashboardRole.police,
+    memberships: harness.session.user!.memberships,
+    organizationId: null,
+  ),
+);
+
+Widget _hospitalScreen(AuthHarness harness) => MaterialApp(
+  home: IncidentManagementScreen(
+    repository: harness.incidentRepository,
+    role: DashboardRole.hospital,
     memberships: harness.session.user!.memberships,
     organizationId: null,
   ),

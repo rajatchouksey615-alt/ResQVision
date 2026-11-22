@@ -75,6 +75,6 @@ The local-only fixture command uses a narrow policy object only while invoking e
 
 ## Scope boundaries
 
-The Flutter client implements human login and session handling. Incident or assignment workflows, push notifications, maps, AI integration, emergency dispatch, and production deployment remain out of scope. The backend remains authoritative for identity and authorization. No real emergency service, police, hospital, or ambulance dispatch is connected.
+The Flutter client implements human login and session handling, role based workspaces, and assignment scoped incident views. Hospital members can review incidents assigned to their active Hospital memberships and see current assignment status. Hospital response updates and assignment creation remain unavailable until OAD-018 and OAD-013 approve their respective authority rules. Push notifications, maps, AI integration, emergency dispatch, and production deployment remain out of scope. The backend remains authoritative for identity and authorization. No real emergency service, police, hospital, or ambulance dispatch is connected.
 
 See [mobile architecture](docs/architecture.md), the [authentication contract and lifecycle](docs/authentication.md), the [project testing strategy](../docs/testing/testing_strategy.md), and the [contribution guide](../CONTRIBUTING.md).

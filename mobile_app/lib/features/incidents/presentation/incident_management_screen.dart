@@ -80,8 +80,9 @@ class _IncidentManagementScreenState extends State<IncidentManagementScreen> {
           children: <Widget>[
             SectionHeading(
               title: '${widget.role.title} incidents',
-              description:
-                  'Read-only incident records returned by your authorized backend scope. Search is not supported by the incident API; status filtering is applied by the backend.',
+              description: widget.role == DashboardRole.hospital
+                  ? 'Verified incidents assigned to your active Hospital organizations. Open a record to review the current incident and assignment status.'
+                  : 'Read-only incident records returned by your authorized backend scope. Search is not supported by the incident API; status filtering is applied by the backend.',
             ),
             const SizedBox(height: AppSpacing.md),
             _StatusFilter(
@@ -172,7 +173,7 @@ class _IncidentManagementScreenState extends State<IncidentManagementScreen> {
   }
 
   void _openIncident(ManagedIncident incident) {
-    Navigator.of(context).push(
+    Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => IncidentDetailScreen(
           repository: widget.repository,

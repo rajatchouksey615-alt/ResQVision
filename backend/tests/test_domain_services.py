@@ -77,6 +77,7 @@ from apps.responses.services import (
     acknowledge_assignment,
     create_assignment,
     reassign_assignment,
+    record_response_activity,
     start_response,
 )
 from apps.sources.models import (
@@ -92,6 +93,7 @@ from common.domain.exceptions import (
     IdempotencyConflict,
     InvalidStateTransition,
     PolicyNotConfigured,
+    ResourceConflict,
     ResourceNotFound,
 )
 
@@ -673,27 +675,28 @@ def test_response_assignments_are_independent_and_reassignment_preserves_history
     hospital.refresh_from_db()
     assert hospital.status == AssignmentStatus.PENDING
 
-    acknowledge_assignment(
-        assignment_id=hospital.pk,
-        actor=HumanActor(hospital_user),
-        command_id=uuid4(),
-    )
+    with pytest.raises(PolicyNotConfigured):
+        acknowledge_assignment(
+            assignment_id=hospital.pk,
+            actor=HumanActor(hospital_user),
+            command_id=uuid4(),
+        )
     start_command = uuid4()
     started = start_response(
-        assignment_id=hospital.pk,
-        actor=HumanActor(hospital_user),
+        assignment_id=police.pk,
+        actor=HumanActor(police_user),
         command_id=start_command,
-        details="Readiness confirmed.",
+        details="Police response started.",
     )
     activity = Response.objects.get(command_id=start_command)
     assert started.value.status == AssignmentStatus.IN_PROGRESS
-    assert activity.activity_kind == ResponseActivityKind.READINESS_UPDATE
+    assert activity.activity_kind == ResponseActivityKind.PROGRESS_UPDATE
     incident.refresh_from_db()
     assert incident.status == IncidentStatus.RESPONSE_ACTIVE
     with pytest.raises(IdempotencyConflict):
         start_response(
-            assignment_id=hospital.pk,
-            actor=HumanActor(hospital_user),
+            assignment_id=police.pk,
+            actor=HumanActor(police_user),
             command_id=start_command,
             details="Different response details.",
         )
@@ -723,6 +726,168 @@ def test_response_assignments_are_independent_and_reassignment_preserves_history
     )
     assert replay.value.pk == replacement.value.pk
     assert replay.replayed
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_hospital_assignment_creation_keeps_one_active_assignment(
+    incident, user, hospital_organization
+):
+    gate = Barrier(2)
+    user_id = user.pk
+    incident_id = incident.pk
+    organization_id = hospital_organization.pk
+
+    def create_from_thread():
+        close_old_connections()
+        try:
+            actor_user = get_user_model().objects.get(pk=user_id)
+            gate.wait(timeout=10)
+            try:
+                result = create_assignment(
+                    incident_id=incident_id,
+                    target_organization_id=organization_id,
+                    actor=HumanActor(actor_user),
+                    command_id=uuid4(),
+                    policy=allow("assignment.create"),
+                )
+                return ("created", result.value.pk)
+            except ResourceConflict:
+                return ("conflict", None)
+        finally:
+            close_old_connections()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda _: create_from_thread(), range(2)))
+
+    assert sorted(result[0] for result in results) == ["conflict", "created"]
+    assert (
+        ResponseAssignment.objects.filter(
+            incident_id=incident_id,
+            target_organization_id=organization_id,
+            status__in=[
+                AssignmentStatus.PENDING,
+                AssignmentStatus.ACKNOWLEDGED,
+                AssignmentStatus.IN_PROGRESS,
+            ],
+        ).count()
+        == 1
+    )
+    assert (
+        AssignmentStatusHistory.objects.filter(
+            response_assignment__incident_id=incident_id,
+            response_assignment__target_organization_id=organization_id,
+            to_status=AssignmentStatus.PENDING,
+        ).count()
+        == 1
+    )
+
+
+@pytest.mark.django_db
+def test_hospital_assignment_creation_retry_is_idempotent_and_duplicate_is_rejected(
+    incident, user, hospital_organization
+):
+    command_id = uuid4()
+    arguments = {
+        "incident_id": incident.pk,
+        "target_organization_id": hospital_organization.pk,
+        "actor": HumanActor(user),
+        "command_id": command_id,
+        "policy": allow("assignment.create"),
+    }
+
+    first = create_assignment(**arguments)
+    replay = create_assignment(**arguments)
+
+    assert first.value.pk == replay.value.pk
+    assert replay.replayed
+    with pytest.raises(ResourceConflict):
+        create_assignment(**{**arguments, "command_id": uuid4()})
+    assert (
+        ResponseAssignment.objects.filter(
+            incident_id=incident.pk,
+            target_organization_id=hospital_organization.pk,
+        ).count()
+        == 1
+    )
+    audit = AuditEvent.objects.get(action="ASSIGNMENT_CREATED", resource_id=first.value.pk)
+    assert audit.actor_user_id == user.pk
+    assert audit.safe_context["incident_id"] == str(incident.pk)
+    assert audit.safe_context["organization_id"] == str(hospital_organization.pk)
+    assert audit.occurred_at is not None
+
+
+@pytest.mark.django_db
+def test_hospital_assignment_creation_requires_policy_and_active_target(
+    incident, user, hospital_organization
+):
+    with pytest.raises(PolicyNotConfigured):
+        create_assignment(
+            incident_id=incident.pk,
+            target_organization_id=hospital_organization.pk,
+            actor=HumanActor(user),
+            command_id=uuid4(),
+        )
+
+    hospital_organization.is_active = False
+    hospital_organization.save(update_fields=["is_active", "updated_at"])
+    with pytest.raises(AuthorizationDenied):
+        create_assignment(
+            incident_id=incident.pk,
+            target_organization_id=hospital_organization.pk,
+            actor=HumanActor(user),
+            command_id=uuid4(),
+            policy=allow("assignment.create"),
+        )
+    assert not ResponseAssignment.objects.filter(
+        incident_id=incident.pk,
+        target_organization_id=hospital_organization.pk,
+    ).exists()
+
+
+@pytest.mark.django_db
+def test_hospital_status_updates_fail_closed_at_domain_boundary(
+    incident, user, hospital_organization
+):
+    Group.objects.get_or_create(name=hospital_organization.organization_kind)
+    add_membership(user, hospital_organization)
+    assignment = create_assignment(
+        incident_id=incident.pk,
+        target_organization_id=hospital_organization.pk,
+        actor=HumanActor(user),
+        command_id=uuid4(),
+        policy=allow("assignment.create"),
+    ).value
+    with pytest.raises(PolicyNotConfigured):
+        acknowledge_assignment(
+            assignment_id=assignment.pk,
+            actor=HumanActor(user),
+            command_id=uuid4(),
+        )
+    with pytest.raises(PolicyNotConfigured):
+        record_response_activity(
+            assignment_id=assignment.pk,
+            actor=HumanActor(user),
+            command_id=uuid4(),
+            activity_kind=ResponseActivityKind.READINESS_UPDATE,
+            details="Simulated readiness update.",
+        )
+
+    assignment.refresh_from_db()
+    assert assignment.status == AssignmentStatus.PENDING
+    assert list(
+        AssignmentStatusHistory.objects.filter(response_assignment=assignment).values_list(
+            "to_status", flat=True
+        )
+    ) == [AssignmentStatus.PENDING]
+    assert not Response.objects.filter(response_assignment=assignment).exists()
+    assert (
+        AuditEvent.objects.filter(
+            action="DOMAIN_ACTION_DENIED",
+            resource_id=assignment.pk,
+            outcome=AuditEvent.Outcome.DENIED,
+        ).count()
+        == 2
+    )
 
 
 @pytest.mark.django_db

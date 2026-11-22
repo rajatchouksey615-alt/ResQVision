@@ -15,6 +15,6 @@ class HospitalDashboardScreen extends StatelessWidget {
     role: DashboardRole.hospital,
     sectionTitle: 'Assigned hospital incidents',
     description:
-        'Read-only incident and response assignment information for active hospital memberships.',
+        'Incidents assigned to your active Hospital memberships. Review the current incident and assignment status within your authorized organization scope.',
   );
 }

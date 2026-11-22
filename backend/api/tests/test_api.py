@@ -19,7 +19,7 @@ from apps.incidents.models import (
 )
 from apps.notifications.models import Notification, NotificationStatus
 from apps.organizations.models import MembershipStatus, Organization, OrganizationMembership
-from apps.responses.models import AssignmentStatus, Response
+from apps.responses.models import AssignmentStatus, AssignmentStatusHistory, Response
 from apps.responses.services import create_assignment
 from apps.sources.models import VideoSourceAuthorizationStatus
 from common.domain.actors import HumanActor
@@ -239,13 +239,14 @@ def test_incident_reads_are_limited_to_active_assignment_scope_even_for_admin_gr
     listed = client.get("/api/v1/incidents/")
     detail = client.get(f"/api/v1/incidents/{incident.pk}/")
     out_of_scope = client.get(f"/api/v1/incidents/{unrelated_incident.pk}/")
+    out_of_scope_assignments = client.get(f"/api/v1/incidents/{unrelated_incident.pk}/assignments/")
     visible_assignments = client.get(f"/api/v1/incidents/{incident.pk}/assignments/")
     assignment_detail = client.get(f"/api/v1/assignments/{assignment.pk}/")
 
     assert listed.status_code == 200
     assert [row["id"] for row in listed.json()["results"]] == [str(incident.pk)]
     assert detail.status_code == assignment_detail.status_code == 200
-    assert out_of_scope.status_code == 404
+    assert out_of_scope.status_code == out_of_scope_assignments.status_code == 404
     assert visible_assignments.json()["count"] == 1
 
 
@@ -298,7 +299,7 @@ def test_assignment_detail_and_actions_hide_other_organization_resources(
 
 
 @pytest.mark.django_db
-def test_response_activity_obeys_organization_kind_and_records_through_service(
+def test_hospital_response_activity_fails_closed_until_policy_is_approved(
     user, incident, hospital_organization
 ):
     add_membership(user, hospital_organization)
@@ -324,11 +325,181 @@ def test_response_activity_obeys_organization_kind_and_records_through_service(
         format="json",
     )
 
-    assert ack.status_code == 200
-    assert activity.status_code == 201
-    assert activity.json()["data"]["activity_kind"] == "READINESS_UPDATE"
-    assert wrong_kind.status_code == 409
-    assert Response.objects.filter(response_assignment=assignment).count() == 1
+    assert ack.status_code == activity.status_code == wrong_kind.status_code == 503
+    assert ack.json()["code"] == activity.json()["code"] == "policy_unavailable"
+    assert Response.objects.filter(response_assignment=assignment).count() == 0
+
+
+@pytest.mark.django_db
+def test_hospital_assignment_reads_are_scoped_and_updates_fail_closed(
+    user, incident, hospital_organization
+):
+    add_membership(user, hospital_organization)
+    assignment = make_assignment(incident, hospital_organization, user)
+    client, _ = make_client_with_token(user)
+
+    incident_list = client.get("/api/v1/incidents/")
+    incident_detail = client.get(f"/api/v1/incidents/{incident.pk}/")
+    assignment_list = client.get(f"/api/v1/incidents/{incident.pk}/assignments/")
+    assignment_detail = client.get(f"/api/v1/assignments/{assignment.pk}/")
+    invalid_start = client.post(
+        f"/api/v1/assignments/{assignment.pk}/start/",
+        {"command_id": str(uuid4()), "details": "Readiness update."},
+        format="json",
+    )
+    acknowledge_command = str(uuid4())
+    acknowledged = client.post(
+        f"/api/v1/assignments/{assignment.pk}/acknowledge/",
+        {"command_id": acknowledge_command},
+        format="json",
+    )
+    replay = client.post(
+        f"/api/v1/assignments/{assignment.pk}/acknowledge/",
+        {"command_id": acknowledge_command},
+        format="json",
+    )
+    start_command = uuid4()
+    started = client.post(
+        f"/api/v1/assignments/{assignment.pk}/start/",
+        {"command_id": str(start_command), "details": "Readiness confirmed."},
+        format="json",
+    )
+    complete_command = uuid4()
+    completed = client.post(
+        f"/api/v1/assignments/{assignment.pk}/complete/",
+        {"command_id": str(complete_command), "details": "Simulation complete."},
+        format="json",
+    )
+    unable = client.post(
+        f"/api/v1/assignments/{assignment.pk}/unable-to-respond/",
+        {"command_id": str(uuid4()), "reason": "No simulated coverage."},
+        format="json",
+    )
+
+    assert incident_list.status_code == incident_detail.status_code == 200
+    assert incident_list.json()["results"][0]["id"] == str(incident.pk)
+    assert assignment_list.status_code == assignment_detail.status_code == 200
+    assert assignment_list.json()["results"][0]["target_organization_kind"] == "HOSPITAL"
+    assert assignment_detail.json()["id"] == str(assignment.pk)
+    for response in (invalid_start, acknowledged, replay, started, completed, unable):
+        assert response.status_code == 503
+        assert response.json()["code"] == "policy_unavailable"
+
+    histories = list(
+        AssignmentStatusHistory.objects.filter(response_assignment=assignment).order_by(
+            "occurred_at", "pk"
+        )
+    )
+    assert [history.to_status for history in histories] == [AssignmentStatus.PENDING]
+    assert all(history.changed_by_user_id == user.pk for history in histories)
+    assignment.refresh_from_db()
+    assert assignment.status == AssignmentStatus.PENDING
+    assert AuditEvent.objects.filter(
+        action="DOMAIN_ACTION_DENIED",
+        actor_user=user,
+        resource_id=assignment.pk,
+        outcome=AuditEvent.Outcome.DENIED,
+    ).exists()
+
+
+@pytest.mark.django_db
+def test_hospital_unable_to_respond_fails_closed_until_lifecycle_is_approved(
+    user, incident, hospital_organization
+):
+    add_membership(user, hospital_organization)
+    assignment = make_assignment(incident, hospital_organization, user)
+    client, _ = make_client_with_token(user)
+    response = client.post(
+        f"/api/v1/assignments/{assignment.pk}/unable-to-respond/",
+        {"command_id": str(uuid4()), "reason": "No simulated coverage."},
+        format="json",
+    )
+
+    assert response.status_code == 503
+    assert response.json()["code"] == "policy_unavailable"
+    assert not AssignmentStatusHistory.objects.filter(
+        response_assignment=assignment,
+        to_status=AssignmentStatus.UNABLE_TO_RESPOND,
+    ).exists()
+    assignment.refresh_from_db()
+    assert assignment.status == AssignmentStatus.PENDING
+
+
+@pytest.mark.django_db
+def test_hospital_assignment_reads_and_updates_require_active_matching_membership(
+    user, incident, hospital_organization
+):
+    assignment = make_assignment(incident, hospital_organization, user)
+    assigned_membership = add_membership(user, hospital_organization)
+    assigned_membership.status = MembershipStatus.SUSPENDED
+    assigned_membership.save(update_fields=["status", "updated_at"])
+    other_hospital = Organization.objects.create(
+        code="other-hospital",
+        display_name="Other Hospital",
+        organization_kind="HOSPITAL",
+    )
+    add_membership(user, other_hospital)
+    client, _ = make_client_with_token(user)
+
+    assert client.get("/api/v1/incidents/").json()["count"] == 0
+    assert client.get(f"/api/v1/incidents/{incident.pk}/").status_code == 404
+    assert client.get(f"/api/v1/assignments/{assignment.pk}/").status_code == 404
+    assert client.get(f"/api/v1/incidents/{incident.pk}/assignments/").status_code == 404
+    denied = client.post(
+        f"/api/v1/assignments/{assignment.pk}/acknowledge/",
+        {"command_id": str(uuid4())},
+        format="json",
+    )
+    assert denied.status_code == 404
+    assignment.refresh_from_db()
+    assert assignment.status == AssignmentStatus.PENDING
+
+
+@pytest.mark.django_db
+def test_hospital_assignment_is_hidden_when_target_organization_becomes_inactive(
+    user, incident, hospital_organization
+):
+    add_membership(user, hospital_organization)
+    assignment = make_assignment(incident, hospital_organization, user)
+    hospital_organization.is_active = False
+    hospital_organization.save(update_fields=["is_active", "updated_at"])
+    client, _ = make_client_with_token(user)
+
+    assert client.get("/api/v1/incidents/").json()["count"] == 0
+    assert client.get(f"/api/v1/incidents/{incident.pk}/").status_code == 404
+    assert client.get(f"/api/v1/assignments/{assignment.pk}/").status_code == 404
+    assert client.get(f"/api/v1/incidents/{incident.pk}/assignments/").status_code == 404
+    denied = client.post(
+        f"/api/v1/assignments/{assignment.pk}/acknowledge/",
+        {"command_id": str(uuid4())},
+        format="json",
+    )
+
+    assignment.refresh_from_db()
+    assert denied.status_code == 404
+    assert assignment.status == AssignmentStatus.PENDING
+
+
+@pytest.mark.django_db
+def test_staff_and_superuser_flags_do_not_bypass_hospital_assignment_scope(
+    user, incident, hospital_organization
+):
+    assignment = make_assignment(incident, hospital_organization, user)
+    user.is_staff = True
+    user.is_superuser = True
+    user.save(update_fields=["is_staff", "is_superuser"])
+    client, _ = make_client_with_token(user)
+
+    assert client.get("/api/v1/incidents/").json()["count"] == 0
+    assert client.get(f"/api/v1/assignments/{assignment.pk}/").status_code == 404
+    denied = client.post(
+        f"/api/v1/assignments/{assignment.pk}/acknowledge/",
+        {"command_id": str(uuid4())},
+        format="json",
+    )
+    assert denied.status_code == 404
+    assignment.refresh_from_db()
+    assert assignment.status == AssignmentStatus.PENDING
 
 
 @pytest.mark.django_db

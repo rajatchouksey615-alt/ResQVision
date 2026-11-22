@@ -47,7 +47,22 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Incident details')),
+    appBar: AppBar(
+      title: const Text('Incident details'),
+      actions: widget.role == DashboardRole.hospital
+          ? <Widget>[
+              IconButton(
+                tooltip: 'Refresh incident',
+                onPressed: () {
+                  setState(() {
+                    _detail = _load();
+                  });
+                },
+                icon: const Icon(Icons.refresh),
+              ),
+            ]
+          : const <Widget>[],
+    ),
     body: FutureBuilder<ManagedIncidentDetail>(
       future: _detail,
       builder:
@@ -74,19 +89,31 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                 message: error is IncidentDataException
                     ? error.message
                     : 'Incident details could not be loaded. Try again.',
-                onRetry: () => setState(() => _detail = _load()),
+                onRetry: () {
+                  setState(() {
+                    _detail = _load();
+                  });
+                },
               );
             }
-            return _IncidentDetailContent(detail: snapshot.data!);
+            return _IncidentDetailContent(
+              detail: snapshot.data!,
+              role: widget.role,
+            );
           },
     ),
   );
+
 }
 
 class _IncidentDetailContent extends StatelessWidget {
-  const _IncidentDetailContent({required this.detail});
+  const _IncidentDetailContent({
+    required this.detail,
+    required this.role,
+  });
 
   final ManagedIncidentDetail detail;
+  final DashboardRole role;
 
   @override
   Widget build(BuildContext context) {
@@ -96,8 +123,9 @@ class _IncidentDetailContent extends StatelessWidget {
       children: <Widget>[
         SectionHeading(
           title: 'Incident · ${incident.id.substring(0, 8)}',
-          description:
-              'Authoritative incident summary returned by the backend. This page does not change incident state.',
+          description: role == DashboardRole.hospital
+              ? 'Verified incident summary and Hospital assignment returned by your authorized backend scope.'
+              : 'Authoritative incident summary returned by the backend. This page does not change incident state.',
         ),
         const SizedBox(height: AppSpacing.md),
         AppCard(
@@ -152,7 +180,8 @@ class _IncidentDetailContent extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: AppSpacing.sm),
+            if (assignment != detail.assignments.last)
+              const SizedBox(height: AppSpacing.sm),
           ],
         if (detail.assignmentsArePartial)
           const Padding(
